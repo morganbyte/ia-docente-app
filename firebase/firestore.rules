@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // reglas para los usuarios
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // reglas para historial de mensajes por usuario
+    match /messages/{userId}/items/{messageId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // reglas para plantillas públicas o privadas
+    match /templates/{templateId} {
+      allow read: if true; // plantilla pública
+      allow write: if request.auth != null; // solo para usuarios autenticados
+    }
+  }
+}

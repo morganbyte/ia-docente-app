@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "596905665962",
+    "project_id": "ia-docente-app",
+    "storage_bucket": "ia-docente-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:596905665962:android:40f8545da381b2ba41b7d3",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkMpWA3cflWVWYBeD6SVSeeocP_yX1emk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:596905665962:android:a66bbb93d3c93d2141b7d3",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkMpWA3cflWVWYBeD6SVSeeocP_yX1emk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
