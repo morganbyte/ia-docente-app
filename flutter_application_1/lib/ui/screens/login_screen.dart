@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/ui/screens/home_screen.dart';
+import 'package:flutter_application_1/ui/screens/ia_chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/services/auth_service.dart';
 
@@ -24,7 +24,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
             if (user != null) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomeScreen(user: user)),
+                MaterialPageRoute(builder: (context) => IaChatScreen()),
                 );
             } else {
               print("Error al iniciar sesión");
