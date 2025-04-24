@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/conversation_detail_screen.dart';
 
 class HistorialScreen extends StatelessWidget {
   const HistorialScreen({super.key});
@@ -56,14 +57,11 @@ class HistorialScreen extends StatelessWidget {
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios),
                   onTap: () {
-                    // Al dar click, navegas a la pantalla de detalles
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ConversacionDetalleScreen(
-                          pregunta: pregunta,
-                          respuesta: respuesta,
-                          timestamp: date, // Pasamos el DateTime
+                        builder: (_) => ConversationDetailScreen(
+                          conversationId: docs[index].id,
                         ),
                       ),
                     );
