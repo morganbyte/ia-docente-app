@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/services/ia_service.dart';
+import '../../ui/screens/historial_screen.dart';
 
 class IaChatScreen extends StatefulWidget {
   const IaChatScreen({super.key});
@@ -103,29 +104,18 @@ class _IaChatScreenState extends State<IaChatScreen> {
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
-                      _controller.text = 'Generar un temario sobre programación en Dart';
+                      //_controller.text = 'Generar un temario sobre programación en Dart';
                     });
-                    _sendMessage();
                   },
                   child: const Text('Generador de temario'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
-                      _controller.text = 'Crear evaluación para estudiantes de Flutter';
+                      //_controller.text = 'Crear evaluación para estudiantes de Flutter';
                     });
-                    _sendMessage();
                   },
                   child: const Text('Crear evaluaciones'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _controller.text = '¿Qué más puedo hacer con esta app?';
-                    });
-                    _sendMessage();
-                  },
-                  child: const Text('Más'),
                 ),
               ],
             ),
@@ -166,7 +156,14 @@ class _IaChatScreenState extends State<IaChatScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
-        onTap: (index) {},
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HistorialScreen()),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Historial'),
