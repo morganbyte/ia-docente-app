@@ -17,6 +17,7 @@ class _IaChatScreenState extends State<IaChatScreen> {
   List<Map<String, String>> _messages = [];
   bool _loading = false;
 
+
   void _sendMessage() async {
     final prompt = _controller.text.trim();
     if (prompt.isEmpty) return;

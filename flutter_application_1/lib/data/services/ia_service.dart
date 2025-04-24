@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAIService {
-  final String _apiKey = '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';
+  final String _apiKey = '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';
   // Guardamos la conversación activa para seguir el hilo
   String? _conversationId;
 
@@ -17,7 +17,7 @@ class OpenAIService {
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
     if (_conversationId == null) {
-      final convDoc = await userRef.collection('conversations').add({
+      final convDoc = await userRef.collection('conversation').add({
         'createdAt': FieldValue.serverTimestamp(),
       });
       _conversationId = convDoc.id;

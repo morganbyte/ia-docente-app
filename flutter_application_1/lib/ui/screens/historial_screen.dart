@@ -18,7 +18,7 @@ class HistorialScreen extends StatelessWidget {
     final threadsRef = FirebaseFirestore.instance
       .collection('users')
       .doc(uid)
-      .collection('conversations')
+      .collection('conversation')
       .orderBy('createdAt', descending: true);
 
     return Scaffold(
