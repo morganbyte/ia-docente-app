@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/login_screen.dart';
 import '../../data/services/ia_service.dart';
 import '../../ui/screens/historial_screen.dart';
 
@@ -49,9 +51,28 @@ class _IaChatScreenState extends State<IaChatScreen> {
     }
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => AuthenticationPage()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Chat con IA"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Cerrar sesión',
+            onPressed: _logout,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
