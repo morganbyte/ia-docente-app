@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAIService {
-  final String _apiKey = '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';
+  final String _apiKey = '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';
   // Guardamos la conversación activa para seguir el hilo
   String? _conversationId;
 

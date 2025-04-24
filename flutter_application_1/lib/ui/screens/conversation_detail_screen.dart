@@ -4,20 +4,15 @@ import 'package:flutter/material.dart';
 
 class ConversationDetailScreen extends StatelessWidget {
   final String conversationId;
-  const ConversationDetailScreen({
-    super.key,
-    required this.conversationId,
-  });
+  const ConversationDetailScreen({super.key, required this.conversationId});
 
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    
-
+    final uid = FirebaseAuth.instance.currentUser!.uid;
     final messagesRef = FirebaseFirestore.instance
       .collection('users')
-      .doc(userId)
-      .collection('conversations')             // <-- si usas subcolección "conversations"
+      .doc(uid)
+      .collection('conversation')
       .doc(conversationId)
       .collection('messages')
       .orderBy('timestamp');
@@ -27,28 +22,30 @@ class ConversationDetailScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: messagesRef.snapshots(),
         builder: (ctx, snap) {
-          if (snap.connectionState == ConnectionState.waiting)
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-
-          final docs = snap.data!.docs;
+          }
+          final docs = snap.data?.docs ?? [];
           return ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: docs.length,
-            itemBuilder: (ctx, i) {
-              final data = docs[i].data()! as Map<String, dynamic>;
-              final isUser = data['sender']=='user';
+            itemBuilder: (ctx2, i) {
+              final msg = docs[i].data()! as Map<String, dynamic>;
+              final isUser = msg['sender'] == 'user';
               return Align(
-                alignment:
-                    isUser ? Alignment.centerRight : Alignment.centerLeft,
+                alignment: isUser
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical:4,horizontal:8),
+                  margin: const EdgeInsets.symmetric(vertical: 4),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isUser
-                        ? Colors.blue.shade100
-                        : Colors.grey.shade200,
+                      ? Colors.blue.shade100
+                      : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(data['text'] as String),
+                  child: Text(msg['text'] as String),
                 ),
               );
             },
