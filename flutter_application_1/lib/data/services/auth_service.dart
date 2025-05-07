@@ -6,6 +6,52 @@ class Authentication {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  Future<User?> signUpWithEmail ({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email, 
+        password: password,
+      );
+
+      final user = credential.user;
+      
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({
+            'uid': user.uid,
+            'email': user.email,
+            'displayName': displayName,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+      }
+      return user;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
+  Future<User?> signInWithEmail ({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email, 
+        password: password,
+      );
+      return credential.user;
+    } on FirebaseAuthException catch (e) {
+      throw Exception(e.message);
+    }
+  }
+
   Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
