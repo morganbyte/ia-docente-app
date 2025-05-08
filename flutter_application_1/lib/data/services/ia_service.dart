@@ -3,18 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
-class OpenAIService {
-  final String _apiKey = 'sk-or-v1-80f76f730cb37c4e25f15ed7b96a9a3660fa50d403b787348418eddfd2961924v';
-  // Guardamos la conversación activa para seguir el hilo
+class DeepSeekService {
+  final String _baseUrl = 'http://10.0.2.2:11434/api/chat';
+
   String? _conversationId;
 
-  Future<String> getOpenAIResponse(String prompt) async {
+  Future<String> getDeepSeekResponse(String prompt, String tipoPlantilla) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       throw Exception("Usuario no autenticado");
     }
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid);
 
     if (_conversationId == null) {
       final convDoc = await userRef.collection('conversation').add({
@@ -34,25 +36,21 @@ class OpenAIService {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    final url = Uri.parse('https://openrouter.ai/api/v1/chat/completions');
+    final requestData = {
+      "tipoPlantilla": tipoPlantilla,
+      "tema": prompt,
+      "numeroPreguntas": 5,
+      "dificultad": "media",
+    };
+
     final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $_apiKey',
-        'Content-Type': 'application/json',
-        //'HTTP-Referer': 'https://tu-app.com',
-        //'X-Title': 'FlutterChatBotDemo',
-      },
-      body: jsonEncode({
-        "model": "openai/gpt-3.5-turbo",
-        "messages": [
-          {"role": "user", "content": prompt},
-        ],
-      }),
+      Uri.parse(_baseUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestData),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Error en la API: ${response.body}');
+      throw Exception('Error en DeepSeek: ${response.body}');
     }
 
     final data = jsonDecode(utf8.decode(response.bodyBytes));
