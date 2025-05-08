@@ -31,7 +31,7 @@ class PlantillaScreen extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder:
-                  (context) => PlantillaFormScreen(tipoPlantilla: templateType),
+                  (context) => TemplateFormScreen(),
             ),
           );
         },
