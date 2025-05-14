@@ -1,27 +1,34 @@
 import 'package:flutter/material.dart';
-import '../../data/services/ia_service.dart'; // Asegúrate de que la ruta sea correcta
+import 'package:flutter_application_1/ui/screens/template_preview_screen.dart';
+import '../../data/services/ia_service.dart';
 
 class TemplateFormScreen extends StatefulWidget {
-  const TemplateFormScreen({super.key});
+  final String templateType; // Recibimos el tipo de plantilla seleccionado
+
+  const TemplateFormScreen({super.key, required this.templateType});
 
   @override
   _TemplateFormScreenState createState() => _TemplateFormScreenState();
 }
 
 class _TemplateFormScreenState extends State<TemplateFormScreen> {
-  String _selectedTemplate = 'Examen';
   final TextEditingController _topicController = TextEditingController();
   final TextEditingController _numQuestionsController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
   final TextEditingController _difficultyController = TextEditingController();
+  final TextEditingController _numActivitiesController =
+      TextEditingController();
 
   bool _loading = false;
 
+  // Método para generar el JSON con los datos y enviarlo a la IA
   Future<void> _generateTemplate() async {
     final topic = _topicController.text.trim();
     final difficulty = _difficultyController.text.trim();
     final duration = _durationController.text.trim();
     final numQuestions = int.tryParse(_numQuestionsController.text.trim()) ?? 5;
+    final numActivities =
+        int.tryParse(_numActivitiesController.text.trim()) ?? 0;
 
     if (topic.isEmpty) {
       _showDialog('Por favor, ingresa un tema.');
@@ -31,31 +38,36 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
     setState(() => _loading = true);
 
     try {
-      // Construir el JSON dinámico
-      Map<String, dynamic> request = {
+      final request = {
         "model": "mistral",
+        "tipoPlantilla": widget.templateType,
         "tema": topic,
-        "tipoPlantilla": _selectedTemplate.toLowerCase()
       };
 
-      if (_selectedTemplate == 'Examen') {
-        request["numeroPreguntas"] = numQuestions;
+      if (widget.templateType == 'Exámenes') {
+        request["numeroPreguntas"] = numQuestions.toString();
+        request["duracion"] = duration;
         request["dificultad"] = difficulty;
+      } else if (widget.templateType == 'Talleres') {
         request["duracion"] = duration;
-      } else if (_selectedTemplate == 'Taller') {
-        request["actividades"] = difficulty; // actividades ingresadas en el campo de dificultad
+        request["numeroActividades"] = numActivities.toString();
+      } else if (widget.templateType == 'Plan de estudio') {
+      } else if (widget.templateType == 'Quizzes') {
+        request["numeroPreguntas"] = numQuestions.toString();
         request["duracion"] = duration;
-      } else if (_selectedTemplate == 'Temario') {
-        request["numeroLecciones"] = numQuestions;
       }
 
-      // Enviar a la IA usando el servicio
-      final response = await DeepSeekService().getDeepSeekResponse(
-        topic,
-        _selectedTemplate.toLowerCase(),
+      final response = await DeepSeekService().getDeepSeekResponseFromRequest(
+        request,
       );
 
-      _showDialog(response);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TemplatePreviewScreen(jsonResponse: response),
+        ),
+      );
+      
     } catch (e) {
       _showDialog("Ocurrió un error al generar la plantilla:\n$e");
     } finally {
@@ -64,20 +76,13 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   }
 
   void _showDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Resultado"),
-        content: SingleChildScrollView(child: Text(message)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cerrar"),
-          )
-        ],
-      ),
-    );
-  }
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => TemplatePreviewScreen(jsonResponse: message),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -87,14 +92,6 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            DropdownButton<String>(
-              value: _selectedTemplate,
-              onChanged: (value) => setState(() => _selectedTemplate = value!),
-              items: <String>['Examen', 'Taller', 'Temario']
-                  .map((val) => DropdownMenuItem(value: val, child: Text(val)))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
             TextField(
               controller: _topicController,
               decoration: const InputDecoration(
@@ -103,9 +100,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Campos condicionales según tipo
-            if (_selectedTemplate == 'Examen') ...[
+            // Dependiendo del tipo de plantilla, muestra los campos correspondientes
+            if (widget.templateType == 'Exámenes') ...[
               TextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
@@ -131,7 +127,7 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
                   hintText: 'Fácil, media, difícil',
                 ),
               ),
-            ] else if (_selectedTemplate == 'Taller') ...[
+            ] else if (widget.templateType == 'Talleres') ...[
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
@@ -142,29 +138,47 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
               ),
               const SizedBox(height: 16),
               TextField(
-                controller: _difficultyController,
+                controller: _numActivitiesController,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Actividades',
-                  hintText: 'Actividades del taller',
+                  labelText: 'Número de actividades',
+                  hintText: 'Ej: 3',
                 ),
               ),
-            ] else if (_selectedTemplate == 'Temario') ...[
+            ] else if (widget.templateType == 'Plan de Estudio') ...[
+              TextField(
+                controller: _topicController,
+                decoration: const InputDecoration(
+                  labelText: 'Tema',
+                  hintText: 'Tema del curso',
+                ),
+              ),
+            ] else if (widget.templateType == 'Quizzes') ...[
               TextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Lecciones',
-                  hintText: 'Número de lecciones',
+                  labelText: 'Número de preguntas',
+                  hintText: 'Ej: 10',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _durationController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Duración (minutos)',
+                  hintText: 'Ej: 30',
                 ),
               ),
             ],
-
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _loading ? null : _generateTemplate,
-              child: _loading
-                  ? const CircularProgressIndicator()
-                  : const Text('Generar Plantilla'),
+              child:
+                  _loading
+                      ? const CircularProgressIndicator()
+                      : const Text('Generar Plantilla'),
             ),
           ],
         ),

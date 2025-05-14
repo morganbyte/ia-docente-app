@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/ui/screens/ia_chat_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
 import '../../data/services/auth_service.dart';
 
 class AuthenticationPage extends StatefulWidget {
@@ -44,7 +44,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
       if (user != null) {
         // Redirigir al chat o la pantalla principal
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const IaChatScreen()),
+          MaterialPageRoute(builder: (_) => PlantillaScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -107,7 +107,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
       final user = await _authService.signInWithGoogle();
       if (user != null) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const IaChatScreen()),
+          MaterialPageRoute(builder: (_) => PlantillaScreen()),
         );
       }
     } catch (e) {

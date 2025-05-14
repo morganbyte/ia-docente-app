@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+/*import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/ui/screens/login_screen.dart';
 import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
@@ -31,7 +31,7 @@ class _IaChatScreenState extends State<IaChatScreen> {
     });
 
     try {
-      final reply = await _deepSeekService.getDeepSeekResponse(prompt, tipoPlantilla);
+      final reply = await _deepSeekService.getDeepSeekResponseFromRequest(request);
 
       setState(() {
         _messages.add({'tipo': 'bot', 'mensaje': reply});
@@ -245,4 +245,4 @@ class _IaChatScreenState extends State<IaChatScreen> {
       ),
     );
   }
-}
+}*/

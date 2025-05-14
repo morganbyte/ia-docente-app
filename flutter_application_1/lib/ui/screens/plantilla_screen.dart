@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import './plantilla_form_screen.dart';
+import 'template_form_screen.dart';
 
 class PlantillaScreen extends StatelessWidget {
   @override
@@ -8,21 +8,16 @@ class PlantillaScreen extends StatelessWidget {
       appBar: AppBar(title: Text('Seleccionar Plantilla')),
       body: ListView(
         children: [
-          _buildPlantillaOption(context, 'Temarios', 'temario'),
-          _buildPlantillaOption(context, 'Talleres', 'taller'),
-          _buildPlantillaOption(context, 'Exámenes', 'examen'),
-          _buildPlantillaOption(context, 'Quizzes', 'quiz'),
-          _buildPlantillaOption(context, 'Planes de Estudio', 'planEstudio'),
+          _buildPlantillaOption(context, 'Talleres'),
+          _buildPlantillaOption(context, 'Plan de estudio'),
+          _buildPlantillaOption(context, 'Quizzes'),
+          _buildPlantillaOption(context, 'Exámenes'),
         ],
       ),
     );
   }
 
-  Widget _buildPlantillaOption(
-    BuildContext context,
-    String label,
-    String templateType,
-  ) {
+  Widget _buildPlantillaOption(BuildContext context, String label) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: ElevatedButton(
@@ -30,8 +25,7 @@ class PlantillaScreen extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder:
-                  (context) => TemplateFormScreen(),
+              builder: (context) => TemplateFormScreen(templateType: label),
             ),
           );
         },
