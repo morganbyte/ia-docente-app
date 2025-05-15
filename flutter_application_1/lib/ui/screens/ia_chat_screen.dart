@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/ui/screens/login_screen.dart';
 import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
