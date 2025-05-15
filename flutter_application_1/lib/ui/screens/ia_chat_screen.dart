@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/ui/screens/login_screen.dart';
 import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
@@ -15,7 +16,6 @@ class IaChatScreen extends StatefulWidget {
 class _IaChatScreenState extends State<IaChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final _deepSeekService = DeepSeekService();
-
   final ScrollController _scrollController = ScrollController();
 
   List<Map<String, String>> _messages = [];
@@ -23,22 +23,24 @@ class _IaChatScreenState extends State<IaChatScreen> {
 
   void _sendMessage() async {
     final prompt = _controller.text.trim();
-    final tipoPlantilla = _controller.text.trim();
-    if (prompt.isEmpty) return;
+    if (prompt.isEmpty || _loading) return;
+
     setState(() {
       _loading = true;
       _messages.add({'tipo': 'user', 'mensaje': prompt});
+      _controller.clear();
     });
 
     try {
-      final reply = await _deepSeekService.getDeepSeekResponse(prompt, tipoPlantilla);
+      final reply = await _deepSeekService.getChatResponse(_messages);
 
       setState(() {
         _messages.add({'tipo': 'bot', 'mensaje': reply});
       });
-      await Future.delayed(const Duration(milliseconds: 200));
+
+      await Future.delayed(const Duration(milliseconds: 100));
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        _scrollController.position.maxScrollExtent + 80,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -49,7 +51,6 @@ class _IaChatScreenState extends State<IaChatScreen> {
     } finally {
       setState(() {
         _loading = false;
-        _controller.clear();
       });
     }
   }
@@ -79,132 +80,62 @@ class _IaChatScreenState extends State<IaChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 1) Zona superior: o bien saludo centrado, o bien ListView del chat
             Expanded(
-              child:
-                  _messages.isEmpty
-                      ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 32),
-                              child: Text(
-                                'Hola profesor, ¿en qué puedo ayudarte hoy?',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            // Caja de texto en el centro
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 32,
-                              ),
-                              child: TextField(
-                                controller: _controller,
-                                onSubmitted: (_) => _sendMessage(),
-                                decoration: InputDecoration(
-                                  hintText: 'Envía tu solicitud',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(Icons.send),
-                                    onPressed: _loading ? null : _sendMessage,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // Botones rápidos centrados
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: () {
-                                    //_controller.text = 'Generar un temario sobre Dart';
-                                  },
-                                  child: const Text('Temario'),
-                                ),
-                                const SizedBox(width: 12),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    //_controller.text = 'Crear evaluaciones Flutter';
-                                  },
-                                  child: const Text('Evaluaciones'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )
-                      : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, i) {
-                          final msg = _messages[i];
-                          final isUser = msg['tipo'] == 'user';
-                          return Align(
-                            alignment:
-                                isUser
-                                    ? Alignment.centerRight
-                                    : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color:
-                                    isUser
-                                        ? Colors.deepPurple.shade100
-                                        : Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(msg['mensaje']!),
-                            ),
-                          );
-                        },
+              child: _messages.isEmpty
+                  ? _buildWelcomeUI()
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-            ),
-
-            // 2) Caja de entrada fija bajo la conversación (si ya hay mensajes)
-            if (_messages.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: 'Envía tu solicitud',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, i) {
+                        final msg = _messages[i];
+                        final isUser = msg['tipo'] == 'user';
+                        return Align(
+                          alignment: isUser
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isUser
+                                  ? Colors.deepPurple.shade100
+                                  : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(msg['mensaje']!),
                           ),
+                        );
+                      },
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      onSubmitted: (_) => _sendMessage(),
+                      decoration: InputDecoration(
+                        hintText: 'Escribe tu mensaje...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.send),
-                      onPressed: _loading ? null : _sendMessage,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: _loading ? null : _sendMessage,
+                  ),
+                ],
               ),
-
-            // 3) Indicador de carga
+            ),
             if (_loading)
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
@@ -213,8 +144,6 @@ class _IaChatScreenState extends State<IaChatScreen> {
           ],
         ),
       ),
-
-      // 4) BottomNavigationBar siempre presente
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         onTap: (i) {
@@ -225,23 +154,75 @@ class _IaChatScreenState extends State<IaChatScreen> {
             );
           } else if (i == 2) {
             Navigator.push(
-              context, 
+              context,
               MaterialPageRoute(builder: (_) => PlantillaScreen()),
             );
           }
-          // manejar i==2 → Plantillas...
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Historial',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.view_module),
-            label: 'Plantillas',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Historial'),
+          BottomNavigationBarItem(icon: Icon(Icons.view_module), label: 'Plantillas'),
         ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeUI() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Hola profesor, ¿en qué puedo ayudarte hoy?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _controller,
+              onSubmitted: (_) => _sendMessage(),
+              decoration: InputDecoration(
+                hintText: 'Envía tu solicitud',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _loading ? null : _sendMessage,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          _controller.text = 'Generar un temario sobre Flutter';
+                        },
+                  child: const Text('Temario'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: _loading
+                      ? null
+                      : () {
+                          _controller.text = 'Crear evaluación sobre Firebase';
+                        },
+                  child: const Text('Evaluaciones'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
