@@ -64,7 +64,7 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => TemplatePreviewScreen(jsonResponse: response),
+          builder: (context) => TemplatePreviewScreen(jsonResponse: response, templateType: widget.templateType,),
         ),
       );
       
@@ -79,7 +79,7 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (context) => TemplatePreviewScreen(jsonResponse: message),
+      builder: (context) => TemplatePreviewScreen(jsonResponse: message, templateType: widget.templateType,),
     ),
   );
 }

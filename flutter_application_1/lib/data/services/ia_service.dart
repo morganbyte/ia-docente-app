@@ -86,7 +86,7 @@ class DeepSeekService {
     switch (request['tipoPlantilla']) {
       case 'Exámenes':
         return '''
-Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}. Devuelve un JSON estructurado que debe incluir los siguientes campos:
+Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}. Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
 
 1. tituloExamen: El título del examen.
 2. numeroPreguntas: El número total de preguntas en el examen.
@@ -101,7 +101,7 @@ Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPregunta
 
       case 'Talleres':
         return '''
-Genera una plantilla para un taller sobre ${request['tema']} con una duración de ${request['duracion']} y con ${request['numeroActividades']} actividades sencillas relacionadas al tema. Devuelve un JSON estructurado que debe tener los siguientes campos:
+Genera una plantilla para un taller sobre ${request['tema']} con una duración de ${request['duracion']} y con ${request['numeroActividades']} actividades sencillas relacionadas al tema. Responde únicamente el cuerpo de un JSON estructurado que debe tener los siguientes campos:
 
 1. nombreTaller: El nombre del taller.
 2. descripcionTaller: Una breve descripción del taller.
@@ -115,7 +115,7 @@ Genera una plantilla para un taller sobre ${request['tema']} con una duración d
 
       case 'Plan de Estudio':
         return '''
-Genera un plan de estudio detallado sobre el tema "${request['tema']}". Devuelve un JSON estructurado que debe incluir los siguientes campos:
+Genera un plan de estudio detallado sobre el tema "${request['tema']}". Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
 
 1. tituloCurso: El nombre del curso sobre ${request['tema']}.
 2. numeroLecciones: El número total de lecciones.
@@ -128,7 +128,7 @@ Genera un plan de estudio detallado sobre el tema "${request['tema']}". Devuelve
 
       case 'Quizzes':
         return '''
-Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas']} preguntas relacionadas. Debe tener una duración de ${request['duracion']}. Devuelve un JSON estructurado que debe incluir los siguientes campos:
+Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas']} preguntas relacionadas. Debe tener una duración de ${request['duracion']}. Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
 
 1. tituloQuiz: El nombre del quiz.
 2. numeroPreguntas: El número de preguntas.
