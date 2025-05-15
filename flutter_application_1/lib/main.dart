@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_application_1/ui/screens/ia_chat_screen.dart';
 
 import 'ui/screens/login_screen.dart';
 //import 'ui/screens/ia_chat_screen.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
       home: const _AuthGate(),
       routes: {
         '/login': (_) => AuthenticationPage(),
-        //'/chat': (_) => const IaChatScreen(),
+        '/chat': (_) =>  IaChatScreen(),
         '/historial': (_) => const HistorialScreen(),
         '/plantillas': (_) => PlantillaScreen(),
       },
@@ -58,7 +59,7 @@ class _AuthGate extends StatelessWidget {
           return AuthenticationPage();
         }
         // Si hay usuario, vamos al chat:
-        return PlantillaScreen();
+        return IaChatScreen();
       },
     );
   }
