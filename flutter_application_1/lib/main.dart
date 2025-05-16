@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_1/ui/screens/ia_chat_screen.dart';
-
+import 'ui/screens/main_page.dart';
 import 'ui/screens/login_screen.dart';
-//import 'ui/screens/ia_chat_screen.dart';
-import 'ui/screens/historial_screen.dart';
-import 'ui/screens/plantilla_screen.dart';
-// Si ya tienes pantalla de plantillas, importa aquí:
-// import 'ui/screens/plantillas_screen.dart';
+
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,17 +25,12 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const _AuthGate(),
-      routes: {
-        '/login': (_) => AuthenticationPage(),
-        '/chat': (_) =>  IaChatScreen(),
-        '/historial': (_) => const HistorialScreen(),
-        '/plantillas': (_) => PlantillaScreen(),
-      },
+     
     );
   }
 }
 
-/// Esta clase decide qué pantalla mostrar según el estado de autenticación.
+
 class _AuthGate extends StatelessWidget {
   const _AuthGate();
 
@@ -48,18 +39,17 @@ class _AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Mientras carga la info de Firebase:
+       
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // Si NO hay usuario, vamos a login:
+        
         if (!snapshot.hasData) {
           return AuthenticationPage();
         }
-        // Si hay usuario, vamos al chat:
-        return IaChatScreen();
+        return const MainPage();
       },
     );
   }
