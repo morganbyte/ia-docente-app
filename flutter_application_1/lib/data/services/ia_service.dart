@@ -5,20 +5,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class DeepSeekService {
-  final String _baseUrl = 'http://10.0.2.2:11434/api/chat'; // Dirección del servidor local
+  final String _baseUrl = 'http://10.0.2.2:11434/api/chat';
   String? _conversationId;
 
-  /// Método para enviar el historial del chat y obtener respuesta de la IA
   Future<String> getChatResponse(List<Map<String, String>> messages) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("Usuario no autenticado");
 
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
-    // Crear conversación si no existe
+    final ultimoMensaje = messages.last;
+
+    // Crear conversación si no existe y guardar el preview
     if (_conversationId == null) {
       final convDoc = await userRef.collection('conversation').add({
         'createdAt': FieldValue.serverTimestamp(),
+        'preview': ultimoMensaje['mensaje'] ?? '', // NUEVO: guardamos el preview
       });
       _conversationId = convDoc.id;
     }
@@ -28,8 +30,6 @@ class DeepSeekService {
         .doc(_conversationId)
         .collection('messages');
 
-    // Almacenar en Firestore el nuevo mensaje del usuario
-    final ultimoMensaje = messages.last;
     if (ultimoMensaje['tipo'] == 'user') {
       await messagesRef.add({
         'sender': 'user',
@@ -38,7 +38,6 @@ class DeepSeekService {
       });
     }
 
-    // Convertir mensajes a formato de API de chat (tipo OpenAI)
     final requestMessages = messages.map((msg) {
       return {
         "role": msg['tipo'] == 'user' ? 'user' : 'assistant',
@@ -62,7 +61,6 @@ class DeepSeekService {
     }
 
     final responseLines = const LineSplitter().convert(utf8.decode(response.bodyBytes));
-
     StringBuffer replyBuffer = StringBuffer();
     for (var line in responseLines) {
       if (line.trim().isEmpty) continue;
@@ -76,12 +74,8 @@ class DeepSeekService {
     }
 
     final reply = replyBuffer.toString().trim();
+    if (reply.isEmpty) throw Exception('No se pudo obtener una respuesta del modelo.');
 
-    if (reply.isEmpty) {
-      throw Exception('No se pudo obtener una respuesta del modelo.');
-    }
-
-    // Guardar respuesta en Firestore
     await messagesRef.add({
       'sender': 'bot',
       'text': reply,
@@ -91,77 +85,77 @@ class DeepSeekService {
     return reply;
   }
 
-  /// Método alternativo para plantillas (puedes mejorarlo similar al anterior si deseas)
-  Future<String> getDeepSeekResponseFromRequest(
-    Map<String, dynamic> request,
-  ) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception("Usuario no autenticado");
+ Future<String> getDeepSeekResponseFromRequest(
+  Map<String, dynamic> request,
+) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) throw Exception("Usuario no autenticado");
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+  final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+  final prompt = _generatePrompt(request); // generar prompt ANTES de usarlo
 
-    if (_conversationId == null) {
-      final convDoc = await userRef.collection('conversation').add({
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      _conversationId = convDoc.id;
-    }
+  final requestBody = jsonEncode({
+    "model": request["model"],
+    "messages": [
+      {"role": "user", "content": prompt},
+    ],
+    "stream": true,
+  });
 
-    // Generamos el prompt dependiendo del tipo de plantilla
-    final prompt = _generatePrompt(request);
+  final requestHttp = http.Request('POST', Uri.parse(_baseUrl));
+  requestHttp.headers['Content-Type'] = 'application/json';
+  requestHttp.body = requestBody;
 
-    final messagesRef = userRef
-        .collection('conversation')
-        .doc(_conversationId)
-        .collection('messages');
+  final responseStream = await requestHttp.send();
+  final fullContent = StringBuffer();
 
-    await messagesRef.add({
-      'sender': 'user',
-      'text': prompt,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    final requestBody = jsonEncode({
-      "model": request["model"],
-      "messages": [
-        {"role": "user", "content": prompt},
-      ],
-      "stream": true,
-    });
-
-    final requestHttp = http.Request('POST', Uri.parse(_baseUrl));
-    requestHttp.headers['Content-Type'] = 'application/json';
-    requestHttp.body = requestBody;
-
-    final responseStream = await requestHttp.send();
-
-    final fullContent = StringBuffer();
-    await responseStream.stream.transform(utf8.decoder).listen((chunk) {
-      try {
-        final lines = chunk.trim().split("\n");
-        for (var line in lines) {
-          if (line.trim().isEmpty) continue;
-          final json = jsonDecode(line);
-          final content = json['message']?['content'];
-          if (content != null) fullContent.write(content);
-        }
-      } catch (e) {
-        print("Error leyendo chunk: $e");
+  await responseStream.stream.transform(utf8.decoder).listen((chunk) {
+    try {
+      final lines = chunk.trim().split("\n");
+      for (var line in lines) {
+        if (line.trim().isEmpty) continue;
+        final json = jsonDecode(line);
+        final content = json['message']?['content'];
+        if (content != null) fullContent.write(content);
       }
-    }).asFuture();
+    } catch (e) {
+      print("Error leyendo chunk: $e");
+    }
+  }).asFuture();
 
-    final completeJsonText = fullContent.toString();
-    print("RESPUESTA COMPLETA:");
-    print(completeJsonText);
+  final completeJsonText = fullContent.toString(); // ✅ ahora sí se puede usar
 
-    await messagesRef.add({
-      'sender': 'bot',
-      'text': completeJsonText,
-      'timestamp': FieldValue.serverTimestamp(),
+  if (_conversationId == null) {
+    final convDoc = await userRef.collection('plantillas').add({
+      'tipo': request['tipoPlantilla'],
+      'prompt': prompt,
+      'respuesta': completeJsonText, // ✅ ya está definido
+      'createdAt': FieldValue.serverTimestamp(),
+      'preview': prompt,
     });
-
-    return completeJsonText;
+    _conversationId = convDoc.id;
   }
+
+  final messagesRef = userRef
+      .collection('plantillas')
+      .doc(_conversationId)
+      .collection('messages');
+
+  await messagesRef.add({
+    'sender': 'user',
+    'text': prompt,
+    'timestamp': FieldValue.serverTimestamp(),
+  });
+
+  await messagesRef.add({
+    'sender': 'bot',
+    'text': completeJsonText,
+    'timestamp': FieldValue.serverTimestamp(),
+  });
+
+  return completeJsonText;
+}
+
 
   // Función para generar el prompt adecuado según la plantilla
   String _generatePrompt(Map<String, dynamic> request) {

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/ui/screens/historial_screen.dart';
 import 'package:flutter_application_1/ui/screens/login_screen.dart';
 
 import '../../data/services/ia_service.dart';
@@ -76,27 +77,52 @@ class _IaChatScreenState extends State<IaChatScreen> {
         child: Column(
           children: [
             // AppBar personalizado
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "🤖 Chat con IA",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    tooltip: 'Cerrar sesión',
-                    onPressed: _logout,
-                  ),
-                ],
-              ),
-            ),
+           Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      const Text(
+        "🤖 Chat con IA",
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      Row(
+        children: [
+          PopupMenuButton<String>(
+  icon: const Icon(Icons.more_vert, color: Colors.white),
+  onSelected: (value) {
+    if (value == 'historial') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const HistorialScreen(tipo: 'chats'),
+        ),
+      );
+    }
+  },
+  itemBuilder: (context) => [
+    const PopupMenuItem(
+      value: 'historial',
+      child: Text('Historial de chats'),
+    ),
+  ],
+),
+
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Cerrar sesión',
+            onPressed: _logout,
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+
 
             // Zona del chat
             Expanded(

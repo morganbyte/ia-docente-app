@@ -15,15 +15,26 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> _screens = [
     IaChatScreen(),
-    HistorialScreen(),
+    HistorialScreen(tipo: "",),
     PlantillaScreen(), 
   ];
 
   void _onItemTapped(int index) {
+  if (index == 1) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HistorialScreen(tipo: 'plantillas'),
+      ),
+    );
+  } else {
     setState(() {
       _selectedIndex = index;
     });
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
