@@ -4,11 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
+// Mantenemos el mismo nombre de clase para facilitar la migración
 class DeepSeekService {
-  final String _baseUrl = 'http://10.0.2.2:11434/api/chat'; // Dirección del servidor local
+  // URL base de la API de Gemini
+  final String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+  final String _apiKey = 'AIzaSyA1693TDkcaADVhazIbLLsitORij14L43g';
+  final String _model = 'gemini-2.0-flash';
   String? _conversationId;
 
-  /// Método para enviar el historial del chat y obtener respuesta de la IA
+  /// Método para enviar el historial del chat y obtener respuesta de Gemini
+  /// (mantenemos la misma firma de método para facilitar la migración)
   Future<String> getChatResponse(List<Map<String, String>> messages) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("Usuario no autenticado");
@@ -38,47 +43,49 @@ class DeepSeekService {
       });
     }
 
-    // Convertir mensajes a formato de API de chat (tipo OpenAI)
+    // Convertir mensajes a formato de API de Gemini
     final requestMessages = messages.map((msg) {
       return {
-        "role": msg['tipo'] == 'user' ? 'user' : 'assistant',
-        "content": msg['mensaje'] ?? '',
+        "role": msg['tipo'] == 'user' ? 'user' : 'model',
+        "parts": [{"text": msg['mensaje'] ?? ''}]
       };
     }).toList();
 
     final requestData = {
-      "model": "mistral",
-      "messages": requestMessages,
+      "contents": requestMessages,
+      "generationConfig": {
+        "temperature": 0.7,
+        "topK": 40,
+        "topP": 0.95,
+        "maxOutputTokens": 1024,
+      }
     };
 
     final response = await http.post(
-      Uri.parse(_baseUrl),
+      Uri.parse('$_baseUrl/$_model:generateContent?key=$_apiKey'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(requestData),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Error en DeepSeek: ${response.body}');
+      throw Exception('Error en Gemini: ${response.body}');
     }
 
-    final responseLines = const LineSplitter().convert(utf8.decode(response.bodyBytes));
-
-    StringBuffer replyBuffer = StringBuffer();
-    for (var line in responseLines) {
-      if (line.trim().isEmpty) continue;
-      final Map<String, dynamic> json = jsonDecode(line);
-      if (json.containsKey('message')) {
-        final content = json['message']['content'];
-        if (content != null) {
-          replyBuffer.write(content);
-        }
+    final responseData = jsonDecode(response.body);
+    String reply = '';
+    
+    // Extraer la respuesta del modelo Gemini
+    if (responseData['candidates'] != null && 
+        responseData['candidates'].isNotEmpty && 
+        responseData['candidates'][0]['content'] != null) {
+      final content = responseData['candidates'][0]['content'];
+      if (content['parts'] != null && content['parts'].isNotEmpty) {
+        reply = content['parts'][0]['text'];
       }
     }
 
-    final reply = replyBuffer.toString().trim();
-
     if (reply.isEmpty) {
-      throw Exception('No se pudo obtener una respuesta del modelo.');
+      throw Exception('No se pudo obtener una respuesta del modelo Gemini.');
     }
 
     // Guardar respuesta en Firestore
@@ -91,7 +98,7 @@ class DeepSeekService {
     return reply;
   }
 
-  /// Método alternativo para plantillas (puedes mejorarlo similar al anterior si deseas)
+  /// Método alternativo para plantillas (mantenemos el mismo nombre para facilitar la migración)
   Future<String> getDeepSeekResponseFromRequest(
     Map<String, dynamic> request,
   ) async {
@@ -121,46 +128,69 @@ class DeepSeekService {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    final requestBody = jsonEncode({
-      "model": request["model"],
-      "messages": [
-        {"role": "user", "content": prompt},
-      ],
-      "stream": true,
-    });
-
-    final requestHttp = http.Request('POST', Uri.parse(_baseUrl));
-    requestHttp.headers['Content-Type'] = 'application/json';
-    requestHttp.body = requestBody;
-
-    final responseStream = await requestHttp.send();
-
-    final fullContent = StringBuffer();
-    await responseStream.stream.transform(utf8.decoder).listen((chunk) {
-      try {
-        final lines = chunk.trim().split("\n");
-        for (var line in lines) {
-          if (line.trim().isEmpty) continue;
-          final json = jsonDecode(line);
-          final content = json['message']?['content'];
-          if (content != null) fullContent.write(content);
+    final requestData = {
+      "contents": [
+        {
+          "role": "user",
+          "parts": [{"text": prompt}]
         }
-      } catch (e) {
-        print("Error leyendo chunk: $e");
+      ],
+      "generationConfig": {
+        "temperature": 0.7,
+        "topK": 40,
+        "topP": 0.95,
+        "maxOutputTokens": 8192,
       }
-    }).asFuture();
+    };
 
-    final completeJsonText = fullContent.toString();
+    final response = await http.post(
+      Uri.parse('$_baseUrl/$_model:generateContent?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestData),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error en Gemini: ${response.body}');
+    }
+
+    final responseData = jsonDecode(response.body);
+    String responseText = '';
+    
+    if (responseData['candidates'] != null && 
+        responseData['candidates'].isNotEmpty && 
+        responseData['candidates'][0]['content'] != null) {
+      final content = responseData['candidates'][0]['content'];
+      if (content['parts'] != null && content['parts'].isNotEmpty) {
+        responseText = content['parts'][0]['text'];
+      }
+    }
+
+    if (responseText.isEmpty) {
+      throw Exception('No se pudo obtener una respuesta del modelo Gemini.');
+    }
+
+    // --- INICIO: MODIFICACIÓN PARA ELIMINAR EL BLOQUE DE CÓDIGO ---
+    // Eliminar los delimitadores del bloque de código markdown si están presentes
+    if (responseText.startsWith('```json')) {
+      responseText = responseText.substring(7); // Eliminar '```json'
+    }
+    if (responseText.endsWith('```')) {
+      responseText = responseText.substring(0, responseText.length - 3); // Eliminar '```'
+    }
+    // Eliminar cualquier espacio en blanco al principio o al final que pueda quedar
+    responseText = responseText.trim();
+    // --- FIN: MODIFICACIÓN ---
+
     print("RESPUESTA COMPLETA:");
-    print(completeJsonText);
+    print(responseText);
 
     await messagesRef.add({
       'sender': 'bot',
-      'text': completeJsonText,
+      'text': responseText,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    return completeJsonText;
+    return responseText;
   }
 
   // Función para generar el prompt adecuado según la plantilla
@@ -168,7 +198,9 @@ class DeepSeekService {
     switch (request['tipoPlantilla']) {
       case 'Exámenes':
         return '''
-Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}. Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
+Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}.
+
+IMPORTANTE: Responde SOLAMENTE con un cuerpo JSON válido sin ningún texto antes o después. El JSON debe comenzar con { y terminar con }. NO ENCIERRES EL JSON EN NINGÚN TIPO DE BLOQUE DE CÓDIGO NI COMILLAS TRIPLES.
 
 1. tituloExamen: El título del examen.
 2. numeroPreguntas: El número total de preguntas en el examen.
@@ -179,6 +211,7 @@ Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPregunta
    - respuestaCorrecta: La respuesta correcta.
 4. duracion: Duración del examen en minutos.
 5. dificultad: Dificultad del examen (fácil, media, difícil).
+
 ''';
 
       case 'Talleres':
