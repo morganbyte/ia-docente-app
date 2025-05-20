@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/data/services/pdf_generator_service.dart';
 import 'dart:convert';
 
 class TemplatePreviewScreen extends StatelessWidget {
   final String jsonResponse;
   final String templateType;
 
-  TemplatePreviewScreen({
+  const TemplatePreviewScreen({
     super.key,
     required this.jsonResponse,
     required this.templateType,
@@ -13,157 +14,188 @@ class TemplatePreviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Convertir la respuesta en un mapa de datos
-    Map<String, dynamic> responseMap = jsonDecode(jsonResponse);
+    final Map<String, dynamic> responseMap = jsonDecode(jsonResponse);
 
-    // Obtener la información que nos interesa con valores predeterminados en caso de null
     String titulo =
         responseMap['tituloQuiz'] ??
         responseMap['nombreTaller'] ??
         responseMap['tituloExamen'] ??
         'Título no disponible';
+
     List preguntas = responseMap['preguntas'] ?? [];
 
-    // Dependiendo del tipo de plantilla, mostrar los campos correspondientes
+    TextSpan buildPreguntaSpan(Map preguntaData) {
+      final opciones = preguntaData['opciones'] ?? [];
+
+      return TextSpan(
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 16,
+          height: 1.5,
+        ),
+        children: [
+          TextSpan(
+            text: 'Pregunta ${preguntaData['numeroPregunta']}: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: '${preguntaData['pregunta']}\n\n'),
+          const TextSpan(
+            text: 'Opciones:\n',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          ...opciones
+              .map<TextSpan>((opcion) => TextSpan(text: '- $opcion\n'))
+              .toList(),
+          TextSpan(
+            text: '\nRespuesta Correcta: ',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          TextSpan(text: '${preguntaData['respuestaCorrecta']}\n\n'),
+        ],
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Plantilla Generada")),
+      appBar: AppBar(
+        title: const Text('Plantilla Generada'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Título: $titulo',
-              style: Theme.of(context).textTheme.bodyLarge,
+            SelectableText.rich(
+              TextSpan(
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  height: 1.6,
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'Título: ',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  TextSpan(
+                    text: '$titulo\n\n',
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  if (templateType == 'Quizzes' ||
+                      templateType == 'Exámenes') ...[
+                    const TextSpan(
+                      text: 'Preguntas\n\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    ...preguntas
+                        .map<TextSpan>((p) => buildPreguntaSpan(p))
+                        .toList(),
+                  ],
+                  if (templateType == 'Talleres') ...[
+                    const TextSpan(
+                      text: 'Descripción:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '${responseMap['descripcionTaller'] ?? 'No disponible'}\n\n',
+                    ),
+                    const TextSpan(
+                      text: 'Equipo necesario:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text: (responseMap['equipoNecesario'] ?? [])
+                          .map(
+                            (e) =>
+                                '- ${e['material'] ?? 'Material'}: ${e['descripcion'] ?? ''}',
+                          )
+                          .join('\n'),
+                    ),
+                    const TextSpan(text: '\n\n'),
+                    const TextSpan(
+                      text: 'Objetivo:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '${responseMap['objetivoTaller'] ?? 'No disponible'}\n\n',
+                    ),
+                    const TextSpan(
+                      text: 'Actividades del taller:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text: (responseMap['actividadesTaller'] ?? [])
+                          .map(
+                            (a) =>
+                                '- Actividad ${a['numeroActividad'] ?? ''}: ${a['tituloActividad'] ?? ''} - ${a['descripcionActividad'] ?? ''}',
+                          )
+                          .join('\n'),
+                    ),
+                  ],
+                  if (templateType == 'Exámenes') ...[
+                    const TextSpan(
+                      text: '\nDuración:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '${responseMap['duracion'] ?? 0} minutos\n\n',
+                    ),
+                    const TextSpan(
+                      text: 'Dificultad:\n',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    TextSpan(
+                      text:
+                          '${responseMap['dificultad'] ?? 'No especificada'}\n',
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            if (templateType == 'Quizzes') ...[
-              Text('Preguntas:', style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 8),
-              ...preguntas.map<Widget>((preguntaData) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pregunta ${preguntaData['numeroPregunta']}: ${preguntaData['pregunta']}',
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Opciones:'),
-                        for (var opcion in preguntaData['opciones'] ?? [])
-                          Text('- $opcion'),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Respuesta correcta: ${preguntaData['respuestaCorrecta']}',
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
-            // Mostrar los campos específicos para Talleres
-            if (templateType == 'Talleres') ...[
-              Text(
-                'Descripción: ${responseMap['descripcionTaller'] ?? 'Descripción no disponible'}',
-              ),
-              const SizedBox(height: 16),
-              Text('Equipo necesario:'),
-              const SizedBox(height: 8),
-              ...responseMap['equipoNecesario']?.map<Widget>((item) {
-                    return ListTile(
-                      title: Text(
-                        item['nombreMaterial'] ?? 'Material no disponible',
-                      ),
-                      subtitle: Text(
-                        item['descripcionMaterial'] ??
-                            'Descripción no disponible',
-                      ),
-                    );
-                  }).toList() ??
-                  [],
-              const SizedBox(height: 16),
-              Text(
-                'Objetivo: ${responseMap['objetivoTaller'] ?? 'Objetivo no disponible'}',
-              ),
-              const SizedBox(height: 16),
-              Text('Actividades del taller:'),
-              const SizedBox(height: 8),
-              ...responseMap['actividadesTaller']?.map<Widget>((actividad) {
-                    return ListTile(
-                      title: Text(
-                        'Actividad ${actividad['numeroActividad']} - ${actividad['tituloActividad']}',
-                      ),
-                      subtitle: Text(
-                        actividad['descripcionActividad'] ??
-                            'Descripción no disponible',
-                      ),
-                    );
-                  }).toList() ??
-                  [],
-            ],
-            if (templateType == 'Exámenes') ...[
-              // Mostrar el título del examen
 
-              // Mostrar el número de preguntas
-              Text(
-                'Número de Preguntas: ${responseMap['numeroPregunta'] ?? 0}',
-                style: Theme.of(context).textTheme.bodyLarge,
+            const SizedBox(height: 32),
+
+            ElevatedButton.icon(
+              icon: const Icon(Icons.picture_as_pdf),
+              label: const Text('Exportar a PDF'),
+              onPressed: () {
+                final Map<String, dynamic> data = jsonDecode(jsonResponse);
+                generateAndPrintPdf(data, templateType);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                minimumSize: const Size(double.infinity, 50),
               ),
-              const SizedBox(height: 16),
-
-              // Mostrar la duración del examen
-              Text(
-                'Duración: ${responseMap['duracion'] ?? 0} minutos',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-
-              // Mostrar la dificultad del examen
-              Text(
-                'Dificultad: ${responseMap['dificultad'] ?? 'No especificada'}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-
-              // Mostrar las preguntas y sus opciones
-              Text('Preguntas:', style: Theme.of(context).textTheme.bodyLarge),
-              const SizedBox(height: 8),
-
-              // Mapear y mostrar cada pregunta
-              ...responseMap['preguntas']?.map<Widget>((preguntaData) {
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pregunta ${preguntaData['numeroPregunta']}: ${preguntaData['pregunta']}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Opciones:',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        for (var opcion in preguntaData['opciones'])
-                          Text('- $opcion'),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Respuesta Correcta: ${preguntaData['respuestaCorrecta']}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
+            ),
           ],
         ),
       ),

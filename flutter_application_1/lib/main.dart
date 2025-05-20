@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'ui/screens/main_page.dart';
+import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
 import 'ui/screens/login_screen.dart';
-
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,7 +47,7 @@ class _AuthGate extends StatelessWidget {
         if (!snapshot.hasData) {
           return AuthenticationPage();
         }
-        return const MainPage();
+        return PlantillaScreen();
       },
     );
   }

@@ -8,90 +8,7 @@ class DeepSeekService {
   final String _baseUrl = 'http://10.0.2.2:11434/api/chat'; // Dirección del servidor local
   String? _conversationId;
 
-  /// Método para enviar el historial del chat y obtener respuesta de la IA
-  Future<String> getChatResponse(List<Map<String, String>> messages) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw Exception("Usuario no autenticado");
-
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-
-    // Crear conversación si no existe
-    if (_conversationId == null) {
-      final convDoc = await userRef.collection('conversation').add({
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      _conversationId = convDoc.id;
-    }
-
-    final messagesRef = userRef
-        .collection('conversation')
-        .doc(_conversationId)
-        .collection('messages');
-
-    // Almacenar en Firestore el nuevo mensaje del usuario
-    final ultimoMensaje = messages.last;
-    if (ultimoMensaje['tipo'] == 'user') {
-      await messagesRef.add({
-        'sender': 'user',
-        'text': ultimoMensaje['mensaje'],
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    }
-
-    // Convertir mensajes a formato de API de chat (tipo OpenAI)
-    final requestMessages = messages.map((msg) {
-      return {
-        "role": msg['tipo'] == 'user' ? 'user' : 'assistant',
-        "content": msg['mensaje'] ?? '',
-      };
-    }).toList();
-
-    final requestData = {
-      "model": "mistral",
-      "messages": requestMessages,
-    };
-
-    final response = await http.post(
-      Uri.parse(_baseUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(requestData),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Error en DeepSeek: ${response.body}');
-    }
-
-    final responseLines = const LineSplitter().convert(utf8.decode(response.bodyBytes));
-
-    StringBuffer replyBuffer = StringBuffer();
-    for (var line in responseLines) {
-      if (line.trim().isEmpty) continue;
-      final Map<String, dynamic> json = jsonDecode(line);
-      if (json.containsKey('message')) {
-        final content = json['message']['content'];
-        if (content != null) {
-          replyBuffer.write(content);
-        }
-      }
-    }
-
-    final reply = replyBuffer.toString().trim();
-
-    if (reply.isEmpty) {
-      throw Exception('No se pudo obtener una respuesta del modelo.');
-    }
-
-    // Guardar respuesta en Firestore
-    await messagesRef.add({
-      'sender': 'bot',
-      'text': reply,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    return reply;
-  }
-
-  /// Método alternativo para plantillas (puedes mejorarlo similar al anterior si deseas)
+  /// Método para obtener respuesta de la IA según request (para plantillas)
   Future<String> getDeepSeekResponseFromRequest(
     Map<String, dynamic> request,
   ) async {
@@ -100,6 +17,7 @@ class DeepSeekService {
 
     final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
 
+    // Crear nueva conversación si no existe
     if (_conversationId == null) {
       final convDoc = await userRef.collection('conversation').add({
         'createdAt': FieldValue.serverTimestamp(),
@@ -107,7 +25,6 @@ class DeepSeekService {
       _conversationId = convDoc.id;
     }
 
-    // Generamos el prompt dependiendo del tipo de plantilla
     final prompt = _generatePrompt(request);
 
     final messagesRef = userRef
@@ -115,12 +32,14 @@ class DeepSeekService {
         .doc(_conversationId)
         .collection('messages');
 
+    // Guardar el prompt del usuario
     await messagesRef.add({
       'sender': 'user',
       'text': prompt,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    // Preparar petición HTTP
     final requestBody = jsonEncode({
       "model": request["model"],
       "messages": [
@@ -154,16 +73,25 @@ class DeepSeekService {
     print("RESPUESTA COMPLETA:");
     print(completeJsonText);
 
+    // Guardar respuesta bot en Firestore
     await messagesRef.add({
       'sender': 'bot',
       'text': completeJsonText,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    // Guardar plantilla generada en Firestore (subcolección 'plantillas')
+    await userRef.collection('plantillas').add({
+      'tipoPlantilla': request['tipoPlantilla'],
+      'tema': request['tema'],
+      'jsonRespuesta': completeJsonText,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
     return completeJsonText;
   }
 
-  // Función para generar el prompt adecuado según la plantilla
+  /// Método para generar el prompt en función del tipo de plantilla
   String _generatePrompt(Map<String, dynamic> request) {
     switch (request['tipoPlantilla']) {
       case 'Exámenes':
@@ -227,6 +155,7 @@ Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas
     }
   }
 
+  /// Reset para iniciar nueva conversación
   void resetConversation() {
     _conversationId = null;
   }
