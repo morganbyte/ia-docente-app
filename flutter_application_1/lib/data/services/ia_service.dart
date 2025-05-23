@@ -5,27 +5,33 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 class DeepSeekService {
-  final String _baseUrl = 'http://10.0.2.2:11434/api/chat'; // Dirección del servidor local
+  final String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
+  final String _apiKey = 'AIzaSyA1693TDkcaADVhazIbLLsitORij14L43g';
+  final String _model = 'gemini-2.0-flash';
   String? _conversationId;
 
-  /// Método para obtener respuesta de la IA según request (para plantillas)
+  /// Método para obtener respuesta de la IA según request (para plantillas) usando Gemini
   Future<String> getDeepSeekResponseFromRequest(
     Map<String, dynamic> request,
   ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("Usuario no autenticado");
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid);
+
+    final prompt = _generatePrompt(request);
 
     // Crear nueva conversación si no existe
     if (_conversationId == null) {
       final convDoc = await userRef.collection('conversation').add({
         'createdAt': FieldValue.serverTimestamp(),
+        'preview': prompt, // Guardamos preview del prompt
       });
       _conversationId = convDoc.id;
     }
-
-    final prompt = _generatePrompt(request);
 
     final messagesRef = userRef
         .collection('conversation')
@@ -39,64 +45,81 @@ class DeepSeekService {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    // Preparar petición HTTP
-    final requestBody = jsonEncode({
-      "model": request["model"],
-      "messages": [
-        {"role": "user", "content": prompt},
+    // Construir cuerpo para Gemini API
+    final requestBody = {
+      "contents": [
+        {
+          "role": "user",
+          "parts": [
+            {"text": prompt},
+          ],
+        },
       ],
-      "stream": true,
-    });
+      "generationConfig": {
+        "temperature": 0.7,
+        "topK": 40,
+        "topP": 0.95,
+        "maxOutputTokens": 2048,
+      },
+    };
 
-    final requestHttp = http.Request('POST', Uri.parse(_baseUrl));
-    requestHttp.headers['Content-Type'] = 'application/json';
-    requestHttp.body = requestBody;
+    final response = await http.post(
+      Uri.parse('$_baseUrl/$_model:generateContent?key=$_apiKey'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(requestBody),
+    );
 
-    final responseStream = await requestHttp.send();
+    if (response.statusCode != 200) {
+      throw Exception('Error en Gemini: ${response.body}');
+    }
 
-    final fullContent = StringBuffer();
-    await responseStream.stream.transform(utf8.decoder).listen((chunk) {
-      try {
-        final lines = chunk.trim().split("\n");
-        for (var line in lines) {
-          if (line.trim().isEmpty) continue;
-          final json = jsonDecode(line);
-          final content = json['message']?['content'];
-          if (content != null) fullContent.write(content);
-        }
-      } catch (e) {
-        print("Error leyendo chunk: $e");
+    final responseData = jsonDecode(response.body);
+    String completeText = '';
+
+    // Extraer la respuesta del modelo Gemini
+    if (responseData['candidates'] != null &&
+        responseData['candidates'].isNotEmpty &&
+        responseData['candidates'][0]['content'] != null) {
+      final content = responseData['candidates'][0]['content'];
+      if (content['parts'] != null && content['parts'].isNotEmpty) {
+        completeText = content['parts'][0]['text'];
       }
-    }).asFuture();
+    }
 
-    final completeJsonText = fullContent.toString();
-    print("RESPUESTA COMPLETA:");
-    print(completeJsonText);
+    if (completeText.isEmpty) {
+      throw Exception('No se pudo obtener una respuesta del modelo Gemini.');
+    }
 
-    // Guardar respuesta bot en Firestore
-    await messagesRef.add({
-      'sender': 'bot',
-      'text': completeJsonText,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    // Limpiar la respuesta JSON de delimitadores markdown y texto adicional
+    completeText = _limpiarRespuestaJSON(completeText);
 
     // Guardar plantilla generada en Firestore (subcolección 'plantillas')
     await userRef.collection('plantillas').add({
       'tipoPlantilla': request['tipoPlantilla'],
       'tema': request['tema'],
-      'jsonRespuesta': completeJsonText,
+      'jsonRespuesta': completeText,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    return completeJsonText;
+    // Guardar respuesta bot en subcolección mensajes
+    await messagesRef.add({
+      'sender': 'bot',
+      'text': completeText,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    return completeText;
   }
 
-  /// Método para generar el prompt en función del tipo de plantilla
+  // Función para generar el prompt adecuado según la plantilla
   String _generatePrompt(Map<String, dynamic> request) {
+    print('Parámetros recibidos en _generatePrompt: $request');
     switch (request['tipoPlantilla']) {
       case 'Exámenes':
         return '''
-Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}. Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
+Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPreguntas']} preguntas con una duración de ${request['duracion']} y que sea de dificultad ${request['dificultad']}.
+
+IMPORTANTE: Responde SOLAMENTE con un cuerpo JSON válido sin ningún texto antes o después. El JSON debe comenzar con { y terminar con }. NO ENCIERRES EL JSON EN NINGÚN TIPO DE BLOQUE DE CÓDIGO NI COMILLAS TRIPLES.
 
 1. tituloExamen: El título del examen.
 2. numeroPreguntas: El número total de preguntas en el examen.
@@ -107,12 +130,16 @@ Genera un examen sobre el tema "${request['tema']}" de ${request['numeroPregunta
    - respuestaCorrecta: La respuesta correcta.
 4. duracion: Duración del examen en minutos.
 5. dificultad: Dificultad del examen (fácil, media, difícil).
+
 ''';
 
       case 'Talleres':
         return '''
-Genera una plantilla para un taller sobre ${request['tema']} con una duración de ${request['duracion']} y con ${request['numeroActividades']} actividades sencillas relacionadas al tema. Responde únicamente el cuerpo de un JSON estructurado que debe tener los siguientes campos:
+Genera una plantilla para un taller sobre ${request['tema']} con una duración de ${request['duracion']} y con ${request['numeroActividades']} actividades sencillas relacionadas al tema. 
 
+IMPORTANTE: Responde SOLAMENTE con un cuerpo JSON válido sin ningún texto antes o después. El JSON debe comenzar con { y terminar con }. NO ENCIERRES EL JSON EN NINGÚN TIPO DE BLOQUE DE CÓDIGO NI COMILLAS TRIPLES.
+
+El JSON debe tener los siguientes campos:
 1. nombreTaller: El nombre del taller.
 2. descripcionTaller: Una breve descripción del taller.
 3. equipoNecesario: Lista de materiales necesarios, incluyendo una descripción de cada uno.
@@ -124,22 +151,84 @@ Genera una plantilla para un taller sobre ${request['tema']} con una duración d
 ''';
 
       case 'Plan de Estudio':
-        return '''
-Genera un plan de estudio detallado sobre el tema "${request['tema']}". Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
+        return ''' 
+Genera un plan de estudio detallado en formato JSON para el tema "${request['tema']}". 
 
-1. tituloCurso: El nombre del curso sobre ${request['tema']}.
-2. numeroLecciones: El número total de lecciones.
-3. lecciones: Una lista de lecciones con los siguientes campos:
-   - numeroLeccion: Un número que identifica la lección.
-   - tituloLeccion: El título de la lección.
-   - objetivoLeccion: El objetivo de la lección.
-   - duracionLeccion: La duración de la lección en minutos.
+IMPORTANTE: Responde sólo con JSON válido, sin texto adicional ni explicaciones. NO uses bloques de código ni comillas triples. El JSON debe empezar con { y terminar con }.
+
+El JSON debe contener los siguientes campos y estructura:
+
+1. "titulo": título completo del plan de estudio.
+2. "descripcion": una breve descripción general del plan.
+3. "duracion_estimada_horas": duración total estimada en horas.
+4. "objetivos_aprendizaje": lista de objetivos claros y específicos de aprendizaje.
+5. "modulos": lista de módulos. Cada módulo debe contener:
+   - "nombre_modulo": nombre del módulo.
+   - "duracion_modulo_horas": duración estimada en horas.
+   - "temas": lista de temas del módulo. Cada tema debe incluir:
+      - "nombre_tema": nombre del tema.
+      - "recursos_sugeridos": lista de recursos como videos, libros, artículos.
+      - "actividades_propuestas": lista de actividades prácticas sugeridas.
+      - "puntos_clave": lista de conceptos o puntos clave a cubrir.
+      - "evaluacion_sugerida": lista de métodos o actividades para evaluar el aprendizaje.
+
+Ejemplo:
+
+{
+  "titulo": "Plan de Estudio de Introducción a Python",
+  "descripcion": "Un plan completo para principiantes que buscan dominar los fundamentos de la programación con Python.",
+  "duracion_estimada_horas": 40,
+  "objetivos_aprendizaje": [
+    "Comprender los conceptos básicos de la programación.",
+    "Escribir scripts simples en Python.",
+    "Trabajar con estructuras de datos fundamentales de Python.",
+    "Aplicar la lógica condicional y bucles.",
+    "Crear y utilizar funciones.",
+    "Manejar errores y excepciones."
+  ],
+  "modulos": [
+    {
+      "nombre_modulo": "Módulo 1: Fundamentos de Programación y Primeros Pasos con Python",
+      "duracion_modulo_horas": 8,
+      "temas": [
+        {
+          "nombre_tema": "¿Qué es la Programación y por qué Python?",
+          "recursos_sugeridos": [
+            "Video: 'Introducción a la programación' (YouTube)",
+            "Artículo: '¿Por qué aprender Python?' (Blog de tecnología)",
+            "Documentación oficial de Python: '¿Qué es Python?'"
+          ],
+          "actividades_propuestas": [
+            "Investigar la historia de Python.",
+            "Discutir en un foro las ventajas de Python.",
+            "Configurar el entorno de desarrollo (IDE)."
+          ],
+          "puntos_clave": [
+            "Definición de programación.",
+            "Características principales de Python.",
+            "Configuración del entorno de desarrollo."
+          ],
+          "evaluacion_sugerida": [
+            "Cuestionario de verdadero/falso sobre conceptos básicos.",
+            "Revisión de la configuración del entorno."
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Genera el plan completo respetando esta estructura, con contenido coherente y realista basado en el tema indicado
+
 ''';
 
       case 'Quizzes':
         return '''
-Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas']} preguntas relacionadas. Debe tener una duración de ${request['duracion']}. Responde únicamente el cuerpo de un JSON estructurado que debe incluir los siguientes campos:
+Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas']} preguntas relacionadas. Debe tener una duración de ${request['duracion']}. 
 
+IMPORTANTE: Responde SOLAMENTE con un cuerpo JSON válido sin ningún texto antes o después. El JSON debe comenzar con { y terminar con }. NO ENCIERRES EL JSON EN NINGÚN TIPO DE BLOQUE DE CÓDIGO NI COMILLAS TRIPLES.
+
+El JSON debe incluir los siguientes campos:
 1. tituloQuiz: El nombre del quiz.
 2. numeroPreguntas: El número de preguntas.
 3. preguntas: Una lista con la cantidad de preguntas dada con los siguientes campos:
@@ -155,7 +244,31 @@ Genera un quiz sobre el tema "${request['tema']}", de ${request['numeroPreguntas
     }
   }
 
-  /// Reset para iniciar nueva conversación
+  // Función para limpiar la respuesta JSON de delimitadores markdown y texto adicional
+  String _limpiarRespuestaJSON(String texto) {
+    if (texto.startsWith('```json')) {
+      texto = texto.substring(7);
+    } else if (texto.startsWith('```')) {
+      texto = texto.substring(3);
+    }
+    if (texto.endsWith('```')) {
+      texto = texto.substring(0, texto.length - 3);
+    }
+    texto = texto.trim();
+
+    int startIndex = texto.indexOf('{');
+    int endIndex = texto.lastIndexOf('}') + 1;
+
+    if (startIndex != -1 && endIndex > startIndex) {
+      texto = texto.substring(startIndex, endIndex);
+    }
+
+    print("RESPUESTA JSON LIMPIA:");
+    print(texto);
+
+    return texto;
+  }
+
   void resetConversation() {
     _conversationId = null;
   }

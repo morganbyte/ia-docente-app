@@ -16,8 +16,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   final TextEditingController _numQuestionsController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
   final TextEditingController _difficultyController = TextEditingController();
-  final TextEditingController _numActivitiesController =
-      TextEditingController();
+  final TextEditingController _numActivitiesController = TextEditingController();
+  final TextEditingController _numLeccionesController = TextEditingController();
 
   bool _loading = false;
 
@@ -42,8 +42,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
     final difficulty = _difficultyController.text.trim();
     final duration = _durationController.text.trim();
     final numQuestions = int.tryParse(_numQuestionsController.text.trim()) ?? 5;
-    final numActivities =
-        int.tryParse(_numActivitiesController.text.trim()) ?? 0;
+    final numActivities = int.tryParse(_numActivitiesController.text.trim()) ?? 0;
+    final numLecciones = int.tryParse(_numLeccionesController.text.trim()) ?? 0;
 
     if (topic.isEmpty) {
       _showDialog('Por favor, ingresa un tema.');
@@ -67,6 +67,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
         request["duracion"] = duration;
         request["numeroActividades"] = numActivities.toString();
       } else if (widget.templateType == 'Plan de estudio') {
+        request["duracion"] = duration;
+        request["numeroLecciones"] = numLecciones.toString();
       } else if (widget.templateType == 'Quizzes') {
         request["numeroPreguntas"] = numQuestions.toString();
         request["duracion"] = duration;
@@ -124,13 +126,11 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
             : '';
     return Scaffold(
       appBar: AppBar(
-        title: Flexible(
-          child: Text(
-            'Crear plantilla para $plantillaTipoCapitalizada',
-            style: const TextStyle(fontSize: 18),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+        title: Text(
+          'Crear plantilla para $plantillaTipoCapitalizada',
+          style: const TextStyle(fontSize: 18),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -179,8 +179,12 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
                 keyboardType: TextInputType.number,
                 decoration: _inputDecoration('Número de actividades', 'Ej: 3'),
               ),
-            ] else if (widget.templateType == 'Plan de estudio')
-              ...[
+            ] else if (widget.templateType == 'Plan de estudio') ...[
+              TextField(
+                controller: _numLeccionesController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration('Número de lecciones', 'Ej: 3'),
+              )
             ] else if (widget.templateType == 'Quizzes') ...[
               TextField(
                 controller: _numQuestionsController,
