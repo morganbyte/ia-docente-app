@@ -16,19 +16,34 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   final TextEditingController _numQuestionsController = TextEditingController();
   final TextEditingController _durationController = TextEditingController();
   final TextEditingController _difficultyController = TextEditingController();
-  final TextEditingController _numActivitiesController =
-      TextEditingController();
+  final TextEditingController _numActivitiesController = TextEditingController();
+  final TextEditingController _numLeccionesController = TextEditingController();
 
   bool _loading = false;
 
-  // Método para generar el JSON con los datos y enviarlo a la IA
+  InputDecoration _inputDecoration(String label, String hint) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.grey[100],
+      labelStyle: const TextStyle(color: Colors.black87),
+      hintStyle: TextStyle(color: Colors.grey[500]),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   Future<void> _generateTemplate() async {
     final topic = _topicController.text.trim();
     final difficulty = _difficultyController.text.trim();
     final duration = _durationController.text.trim();
     final numQuestions = int.tryParse(_numQuestionsController.text.trim()) ?? 5;
-    final numActivities =
-        int.tryParse(_numActivitiesController.text.trim()) ?? 0;
+    final numActivities = int.tryParse(_numActivitiesController.text.trim()) ?? 0;
+    final numLecciones = int.tryParse(_numLeccionesController.text.trim()) ?? 0;
 
     if (topic.isEmpty) {
       _showDialog('Por favor, ingresa un tema.');
@@ -51,7 +66,9 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
       } else if (widget.templateType == 'Talleres') {
         request["duracion"] = duration;
         request["numeroActividades"] = numActivities.toString();
-      } else if (widget.templateType == 'Plan de estudio') {
+      } else if (widget.templateType == 'Temario') {
+        request["duracion"] = duration;
+        request["numeroLecciones"] = numLecciones.toString();
       } else if (widget.templateType == 'Quizzes') {
         request["numeroPreguntas"] = numQuestions.toString();
         request["duracion"] = duration;
@@ -64,10 +81,13 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => TemplatePreviewScreen(jsonResponse: response, templateType: widget.templateType,),
+          builder:
+              (context) => TemplatePreviewScreen(
+                jsonResponse: response,
+                templateType: widget.templateType,
+              ),
         ),
       );
-      
     } catch (e) {
       _showDialog("Ocurrió un error al generar la plantilla:\n$e");
     } finally {
@@ -76,109 +96,159 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   }
 
   void _showDialog(String message) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => TemplatePreviewScreen(jsonResponse: message, templateType: widget.templateType,),
-    ),
-  );
-}
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => TemplatePreviewScreen(
+              jsonResponse: message,
+              templateType: widget.templateType,
+            ),
+      ),
+    );
+  }
+
+  void _clearFields() {
+    _topicController.clear();
+    _numQuestionsController.clear();
+    _durationController.clear();
+    _difficultyController.clear();
+    _numActivitiesController.clear();
+
+    FocusScope.of(context).unfocus(); // Cierra el teclado si está abierto
+  }
 
   @override
   Widget build(BuildContext context) {
+    final plantillaTipoCapitalizada =
+        widget.templateType.isNotEmpty
+            ? "${widget.templateType[0].toUpperCase()}${widget.templateType.substring(1)}"
+            : '';
     return Scaffold(
-      appBar: AppBar(title: const Text("Crear Plantilla")),
+      appBar: AppBar(
+        title: Text(
+          'Crear plantilla para $plantillaTipoCapitalizada',
+          style: const TextStyle(fontSize: 18),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
             TextField(
               controller: _topicController,
-              decoration: const InputDecoration(
-                labelText: 'Tema',
-                hintText: 'Tema de la plantilla',
-              ),
+              decoration: _inputDecoration('Tema', 'Tema de la plantilla'),
             ),
-            const SizedBox(height: 16),
-            // Dependiendo del tipo de plantilla, muestra los campos correspondientes
+            const SizedBox(height: 20),
+
             if (widget.templateType == 'Exámenes') ...[
               TextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Número de preguntas',
-                  hintText: 'Ej: 5',
-                ),
+                decoration: _inputDecoration('Número de preguntas', 'Ej: 5'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Duración (minutos)',
-                  hintText: 'Ej: 60',
-                ),
+                decoration: _inputDecoration('Duración (minutos)', 'Ej: 60'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: _difficultyController,
-                decoration: const InputDecoration(
-                  labelText: 'Dificultad',
-                  hintText: 'Fácil, media, difícil',
+                decoration: _inputDecoration(
+                  'Dificultad',
+                  'Fácil, media, difícil',
                 ),
               ),
             ] else if (widget.templateType == 'Talleres') ...[
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Duración (horas)',
-                  hintText: 'Ej: 2',
-                ),
+                decoration: _inputDecoration('Duración (horas)', 'Ej: 2'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: _numActivitiesController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Número de actividades',
-                  hintText: 'Ej: 3',
-                ),
+                decoration: _inputDecoration('Número de actividades', 'Ej: 3'),
               ),
-            ] else if (widget.templateType == 'Plan de Estudio') ...[
+            ] else if (widget.templateType == 'Temario') ...[
               TextField(
-                controller: _topicController,
-                decoration: const InputDecoration(
-                  labelText: 'Tema',
-                  hintText: 'Tema del curso',
-                ),
-              ),
+                controller: _numLeccionesController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration('Número de lecciones', 'Ej: 3'),
+              )
             ] else if (widget.templateType == 'Quizzes') ...[
               TextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Número de preguntas',
-                  hintText: 'Ej: 10',
-                ),
+                decoration: _inputDecoration('Número de preguntas', 'Ej: 10'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Duración (minutos)',
-                  hintText: 'Ej: 30',
-                ),
+                decoration: _inputDecoration('Duración (minutos)', 'Ej: 30'),
               ),
             ],
+
             const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _loading ? null : _generateTemplate,
-              child:
-                  _loading
-                      ? const CircularProgressIndicator()
-                      : const Text('Generar Plantilla'),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _loading ? null : _generateTemplate,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurpleAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child:
+                    _loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'Generar',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _clearFields,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Colors
+                          .deepPurpleAccent, // mismo color que el botón generar
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 4,
+                  shadowColor: Colors.deepPurpleAccent.withOpacity(0.5),
+                ),
+                child: const Text(
+                  'Nueva Plantilla',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

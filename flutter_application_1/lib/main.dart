@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'ui/screens/main_page.dart';
+import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
 import 'ui/screens/login_screen.dart';
-
-
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +20,7 @@ class MyApp extends StatelessWidget {
       title: 'EducaPro IA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        textTheme: GoogleFonts.poppinsTextTheme(),
         primarySwatch: Colors.deepPurple,
         useMaterial3: true,
       ),
@@ -49,7 +49,7 @@ class _AuthGate extends StatelessWidget {
         if (!snapshot.hasData) {
           return AuthenticationPage();
         }
-        return const MainPage();
+        return PlantillaScreen();
       },
     );
   }
