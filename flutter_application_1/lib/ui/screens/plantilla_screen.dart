@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart'; // Import for Clipboard
 
 import 'template_form_screen.dart';
 import 'template_preview_screen.dart';
@@ -206,7 +207,7 @@ class _PlantillaScreenState extends State<PlantillaScreen> {
             .collection('plantillas')
             .doc(documentId)
             .delete();
-        
+
         // Mostrar mensaje de confirmación
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -292,16 +293,42 @@ class _PlantillaScreenState extends State<PlantillaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Selecciona la plantilla',
+                'Genera el enlace a tus estudiantes', // Modified text
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
-              Text(
-                'Escoge una opción para generar tu material educativo',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textMedium,
-                  height: 1.4,
+              ElevatedButton( // Replaced Text with ElevatedButton
+                onPressed: () async {
+                  const urlToCopy = 'https://ia-docente-templates.web.app/';
+                  await Clipboard.setData(ClipboardData(text: urlToCopy));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('¡Enlace copiado al portapapeles!'),
+                        backgroundColor: AppColors.accent1, // Use a pleasant color for success
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                        ),
+                        margin: EdgeInsets.all(16),
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent2, // Choose a suitable color
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Copiar enlace de plantillas', // Text for the button
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 30),
@@ -547,7 +574,7 @@ class _PlantillaScreenState extends State<PlantillaScreen> {
                               ),
                             );
                           },
-                          borderRadius: index == 0 
+                          borderRadius: index == 0
                               ? const BorderRadius.only(
                                   topLeft: Radius.circular(12),
                                   topRight: Radius.circular(12),
@@ -663,12 +690,12 @@ class _PlantillaScreenState extends State<PlantillaScreen> {
   }
 
   Widget _buildPlantillaCard(
-    BuildContext context,
-    String label,
-    IconData icon,
-    String description,
-    List<Color> gradientColors,
-  ) {
+      BuildContext context,
+      String label,
+      IconData icon,
+      String description,
+      List<Color> gradientColors,
+      ) {
     final Map<String, String> labelToTemplateType = {
       'Talleres': 'Talleres',
       'Plan de estudio': 'Plan de estudio',
