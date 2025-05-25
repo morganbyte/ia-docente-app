@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/config/app_theme.dart'; 
+import 'package:flutter_application_1/config/app_colors.dart'; 
 
 class TemarioFormat extends StatefulWidget {
   final Map<String, dynamic> temarioData;
@@ -11,13 +13,6 @@ class TemarioFormat extends StatefulWidget {
 
 class _TemarioFormat extends State<TemarioFormat> {
   int _periodoActivo = 0;
-
-  static const Color primaryColor = Color(0xFF3B82F6); 
-  static const Color lightBlueBg = Color(0xFFEFF6FF); 
-  static const Color lightGreenBg = Color(0xFFF0FDF4); 
-  static const Color greenAccent = Color(0xFF10B981); 
-  static const Color lightPurpleBg = Color(0xFFFAF5FF); 
-  static const Color purpleAccent = Color(0xFF8B5CF6); 
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +32,8 @@ class _TemarioFormat extends State<TemarioFormat> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.blue.shade50,
-            Colors.indigo.shade100,
+            AppColors.background.withOpacity(0.95),
+            AppColors.background.withOpacity(0.95),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -51,7 +46,6 @@ class _TemarioFormat extends State<TemarioFormat> {
           children: [
             _buildHeader(titulo, descripcionGeneral),
             const SizedBox(height: 24),
-
             _buildPeriodoButtons(periodos),
             const SizedBox(height: 24),
             _buildPeriodoSeleccionadoContent(periodoSeleccionado),
@@ -67,17 +61,13 @@ class _TemarioFormat extends State<TemarioFormat> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.book_outlined, color: primaryColor, size: 28),
+            Icon(Icons.book_outlined, color: AppColors.primary, size: 28),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 titulo,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
+                style: ThemeData().textTheme.headlineSmall,
               ),
             ),
           ],
@@ -86,10 +76,7 @@ class _TemarioFormat extends State<TemarioFormat> {
         Text(
           descripcionGeneral,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            color: Colors.grey.shade700,
-          ),
+          style: ThemeData().textTheme.bodyMedium,
         ),
       ],
     );
@@ -109,22 +96,13 @@ class _TemarioFormat extends State<TemarioFormat> {
             });
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: isActive ? primaryColor : Colors.white,
-            foregroundColor: isActive ? Colors.white : Colors.grey.shade700,
+            backgroundColor: isActive ? AppColors.primary : AppColors.background,
+            foregroundColor: isActive ? Colors.white : AppColors.textDark,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            textStyle: ThemeData().textTheme.labelLarge,
             elevation: isActive ? 6.0 : 3.0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
-            ),
-          ).copyWith(
-            overlayColor: MaterialStateProperty.resolveWith<Color?>(
-              (Set<MaterialState> states) {
-                if (states.contains(MaterialState.hovered)) {
-                  return isActive ? Colors.white.withOpacity(0.1) : primaryColor.withOpacity(0.1);
-                }
-                return null;
-              },
             ),
           ),
           child: Text(periodos[index]['nombre'] ?? 'Período ${index + 1}'),
@@ -144,13 +122,12 @@ class _TemarioFormat extends State<TemarioFormat> {
     return Container(
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -161,37 +138,29 @@ class _TemarioFormat extends State<TemarioFormat> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.calendar_today_outlined, color: primaryColor),
+              Icon(Icons.calendar_today_outlined, color: AppColors.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   nombrePeriodo,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
-                  ),
+                  style: ThemeData().textTheme.titleLarge,
                 ),
               ),
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: lightBlueBg,
+                  color: AppColors.secondary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.access_time_outlined, size: 16, color: Colors.blue.shade800),
+                    Icon(Icons.access_time_outlined, size: 16, color: AppColors.secondary),
                     const SizedBox(width: 4),
                     Text(
                       duracion,
-                      style: TextStyle(
-                        color: Colors.blue.shade800,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
+                      style: ThemeData().textTheme.labelMedium?.copyWith(color: AppColors.secondary),
                     ),
                   ],
                 ),
@@ -201,14 +170,12 @@ class _TemarioFormat extends State<TemarioFormat> {
           const SizedBox(height: 8),
           Text(
             descripcionPeriodo,
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade700, height: 1.5),
+            style: ThemeData().textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
-
-          // Layout para Temas y Actividades (adaptable)
           LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth > 600) { // Umbral para cambiar a dos columnas
+              if (constraints.maxWidth > 600) {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -229,53 +196,46 @@ class _TemarioFormat extends State<TemarioFormat> {
             },
           ),
           const SizedBox(height: 24),
-
-          // Cronograma
           _buildCronograma(cronograma),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title, Color borderColor) {
+  Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         title,
-        style: TextStyle(
-          fontSize: 19,
-          fontWeight: FontWeight.w700,
-          color: Colors.grey.shade800,
-        ),
+        style: ThemeData().textTheme.titleMedium,
       ),
     );
   }
-
 
   Widget _buildTemasPrincipales(List<dynamic> temas) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle("Temas Principales", primaryColor),
+        _buildSectionTitle("Temas Principales"),
         if (temas.isEmpty)
-          const Text("No hay temas principales disponibles.", style: TextStyle(color: Colors.grey)),
+          Text("No hay temas principales disponibles.", style: ThemeData().textTheme.bodySmall),
         ...temas.map((tema) {
           return Container(
             margin: const EdgeInsets.only(bottom: 10.0),
             padding: const EdgeInsets.all(12.0),
             decoration: BoxDecoration(
-              color: lightBlueBg,
+              color: AppColors.primary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(8.0),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.check_circle_outline, color: primaryColor, size: 20),
+                Icon(Icons.check_circle_outline, color: AppColors.primary, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     tema.toString(),
-                    style: TextStyle(fontSize: 15, color: Colors.grey.shade800, fontWeight: FontWeight.w500),
+                    style: ThemeData().textTheme.bodyMedium,
                   ),
                 ),
               ],
@@ -290,9 +250,9 @@ class _TemarioFormat extends State<TemarioFormat> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle("Actividades Prácticas", greenAccent),
-         if (actividades.isEmpty)
-          const Text("No hay actividades prácticas disponibles.", style: TextStyle(color: Colors.grey)),
+        _buildSectionTitle("Actividades Prácticas"),
+        if (actividades.isEmpty)
+          Text("No hay actividades prácticas disponibles.", style: ThemeData().textTheme.bodySmall),
         ...actividades.map((actividad) {
           final String tituloActividad = actividad['titulo'] ?? "Actividad";
           final String descActividad = actividad['descripcion'] ?? "";
@@ -300,21 +260,21 @@ class _TemarioFormat extends State<TemarioFormat> {
             margin: const EdgeInsets.only(bottom: 12.0),
             padding: const EdgeInsets.all(14.0),
             decoration: BoxDecoration(
-              color: lightGreenBg,
+              color: AppColors.accent4.withOpacity(0.05),
               borderRadius: BorderRadius.circular(8.0),
-              border: Border(left: BorderSide(color: greenAccent, width: 4)),
+              border: Border(left: BorderSide(color: AppColors.accent4, width: 4)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   tituloActividad,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.green.shade800),
+                  style: ThemeData().textTheme.bodyLarge?.copyWith(color: AppColors.accent4),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   descActividad,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: ThemeData().textTheme.bodyMedium,
                 ),
               ],
             ),
@@ -328,9 +288,9 @@ class _TemarioFormat extends State<TemarioFormat> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionTitle("Cronograma Detallado", purpleAccent),
+        _buildSectionTitle("Cronograma Detallado"),
         if (cronograma.isEmpty)
-          const Text("No hay cronograma disponible.", style: TextStyle(color: Colors.grey)),
+          Text("No hay cronograma disponible.", style: ThemeData().textTheme.bodySmall),
         ...cronograma.map((item) {
           final String semana = item['semana'] ?? "Semana";
           final String contenido = item['contenido'] ?? "";
@@ -340,18 +300,18 @@ class _TemarioFormat extends State<TemarioFormat> {
             margin: const EdgeInsets.only(bottom: 12.0),
             padding: const EdgeInsets.all(14.0),
             decoration: BoxDecoration(
-              color: lightPurpleBg,
+              color: AppColors.secondary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(8.0),
-              border: Border(left: BorderSide(color: purpleAccent, width: 4)),
+              border: Border(left: BorderSide(color: AppColors.secondary, width: 4)),
             ),
-            child: Column( // Cambiado a Column para mejor disposición en móvil
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   margin: const EdgeInsets.only(bottom: 8.0),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: purpleAccent,
+                    color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -361,12 +321,12 @@ class _TemarioFormat extends State<TemarioFormat> {
                 ),
                 Text(
                   contenido,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.purple.shade800),
+                  style: ThemeData().textTheme.bodyLarge?.copyWith(color: AppColors.secondary),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   descCronograma,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                  style: ThemeData().textTheme.bodyMedium,
                 ),
               ],
             ),
