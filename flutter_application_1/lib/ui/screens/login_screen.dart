@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_1/ui/screens/plantilla_screen.dart';
-import '../../data/services/auth_service.dart';
+import '../../data/services/authentication_service.dart';
+
+import '../widgets/auth_header.dart';
+import '../widgets/auth_input_fields.dart';
+import '../widgets/main_auth_button.dart';
+import '../widgets/auth_divider.dart';
+import '../widgets/google_auth_button.dart';
 
 class AuthenticationPage extends StatefulWidget {
   const AuthenticationPage({super.key});
+
   @override
   State<AuthenticationPage> createState() => _AuthenticationPageState();
 }
@@ -14,33 +21,12 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _displayNameCtrl = TextEditingController();
-  bool _isLogin = true; 
+  bool _isLogin = true;
   bool _loading = false;
 
-  final Color _buttonColor = const Color(0xFFf6f343); 
+  final Color _buttonColor = const Color(0xFFf6f343);
   final Color _buttonTextColor = Colors.black;
   final Color _googleButtonColor = Colors.black87;
-
-  InputDecoration _inputStyle(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      filled: false,
-      hintStyle: TextStyle(color: Colors.grey.shade600),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade400, width: 1),
-      ),
-    );
-  }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -89,7 +75,6 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
       setState(() => _loading = false);
     }
   }
-
   Future<void> _googleLogin() async {
     setState(() => _loading = true);
     try {
@@ -107,7 +92,6 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
   }
 
   String _parseErrorMessage(dynamic e) {
-    // Puedes agregar más casos personalizados aquí
     if (e is FirebaseAuthException) {
       switch (e.code) {
         case 'user-not-found':
@@ -138,127 +122,35 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _buttonColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.star, color: Colors.black, size: 20),
+                AuthHeader( 
+                  isLogin: _isLogin,
+                  buttonColor: _buttonColor,
                 ),
-                const SizedBox(height: 24),
-
-                Text(
-                  _isLogin ? "Bienvenido a EducaPro" : "Bienvenido a EducaPro",
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+                AuthInputFields( 
+                  isLogin: _isLogin,
+                  displayNameCtrl: _displayNameCtrl,
+                  emailCtrl: _emailCtrl,
+                  passCtrl: _passCtrl,
                 ),
-                const SizedBox(height: 8),
-
-                Text(
-                  _isLogin
-                      ? "Ingresa los siguientes campos para iniciar sesión"
-                      : "Crea una cuenta, tomará unos segundos. Ingresa los siguientes campos",
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
+                MainAuthButton( 
+                  loading: _loading,
+                  isLogin: _isLogin,
+                  onSubmit: _submit,
+                  buttonColor: _buttonColor,
+                  buttonTextColor: _buttonTextColor,
                 ),
-                const SizedBox(height: 24),
-
-                if (!_isLogin) ...[
-                  TextField(
-                    controller: _displayNameCtrl,
-                    decoration: _inputStyle("Nombre"),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                TextField(
-                  controller: _emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _inputStyle("Correo"),
-                ),
-                const SizedBox(height: 16),
-
-                TextField(
-                  controller: _passCtrl,
-                  obscureText: true,
-                  decoration: _inputStyle("Contraseña"),
-                ),
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _buttonColor,
-                      foregroundColor: _buttonTextColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                    child: _loading
-                        ? const CircularProgressIndicator(color: Colors.black)
-                        : Text(
-                            _isLogin ? "Ingresar" : "Empezar",
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        "o",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: _loading ? null : _googleLogin,
-                    icon: const Icon(Icons.g_mobiledata, size: 24),
-                    label: const Text(
-                      "Continuar con Google",
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _googleButtonColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
+                const AuthDivider(), 
+                GoogleAuthButton( 
+                  loading: _loading,
+                  onGoogleLogin: _googleLogin,
+                  googleButtonColor: _googleButtonColor,
                 ),
                 const SizedBox(height: 32),
-
                 Center(
                   child: Wrap(
                     children: [
                       Text(
-                        _isLogin
-                            ? "¿Aún no tienes cuenta?. "
-                            : "Si ya tienes una cuenta. ",
+                        _isLogin ? "¿Aún no tienes cuenta?. " : "Si ya tienes una cuenta. ",
                         style: const TextStyle(color: Colors.black54, fontSize: 14),
                       ),
                       GestureDetector(
@@ -268,7 +160,7 @@ class _AuthenticationPageState extends State<AuthenticationPage> {
                           });
                         },
                         child: Text(
-                          _isLogin ? "Crear una" : "Ingresar",
+                          _isLogin ? "Crear una" : "Ingresar", 
                           style: const TextStyle(
                             color: Color(0xFFf6f343),
                             fontSize: 14,

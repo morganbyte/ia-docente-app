@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/ui/screens/template_preview_screen.dart';
-import '../../data/services/ia_service.dart';
+import 'package:flutter_application_1/data/services/gemini_service.dart';
+import 'package:flutter_application_1/config/app_colors.dart'; 
+import 'package:flutter_application_1/ui/widgets/custom_text_field.dart'; 
 
 class TemplateFormScreen extends StatefulWidget {
-  final String templateType; // Recibimos el tipo de plantilla seleccionado
+  final String templateType; 
 
   const TemplateFormScreen({super.key, required this.templateType});
 
@@ -21,21 +23,6 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
 
   bool _loading = false;
 
-  InputDecoration _inputDecoration(String label, String hint) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      filled: true,
-      fillColor: Colors.grey[100],
-      labelStyle: const TextStyle(color: Colors.black87),
-      hintStyle: TextStyle(color: Colors.grey[500]),
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-    );
-  }
 
   Future<void> _generateTemplate() async {
     final topic = _topicController.text.trim();
@@ -54,7 +41,6 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
 
     try {
       final request = {
-        "model": "mistral",
         "tipoPlantilla": widget.templateType,
         "tema": topic,
       };
@@ -74,37 +60,65 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
         request["duracion"] = duration;
       }
 
-      final response = await DeepSeekService().getDeepSeekResponseFromRequest(
+      final response = await GeminiService().getGeminiResponseFromRequest(
         request,
       );
+
+      if (response.isEmpty) {
+         _showDialog("La respuesta de Gemini está vacía o es inválida.");
+         return;
+      }
+
 
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (context) => TemplatePreviewScreen(
-                jsonResponse: response,
-                templateType: widget.templateType,
-              ),
+          builder: (context) => TemplatePreviewScreen(
+            jsonResponse: response,
+            templateType: widget.templateType,
+          ),
         ),
       );
     } catch (e) {
-      _showDialog("Ocurrió un error al generar la plantilla:\n$e");
+      showDialog(
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Error'),
+            content: Text('Ocurrió un error al generar la plantilla:\n$e'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                },
+                child: const Text('Ok'),
+              ),
+            ],
+          );
+        },
+      );
     } finally {
       setState(() => _loading = false);
     }
   }
 
   void _showDialog(String message) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => TemplatePreviewScreen(
-              jsonResponse: message,
-              templateType: widget.templateType,
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Alerta'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Ok'),
             ),
-      ),
+          ],
+        );
+      },
     );
   }
 
@@ -114,8 +128,20 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
     _durationController.clear();
     _difficultyController.clear();
     _numActivitiesController.clear();
+    _numLeccionesController.clear(); 
 
-    FocusScope.of(context).unfocus(); // Cierra el teclado si está abierto
+    FocusScope.of(context).unfocus(); 
+  }
+
+  @override
+  void dispose() {
+    _topicController.dispose();
+    _numQuestionsController.dispose();
+    _durationController.dispose();
+    _difficultyController.dispose();
+    _numActivitiesController.dispose();
+    _numLeccionesController.dispose(); 
+    super.dispose();
   }
 
   @override
@@ -128,12 +154,14 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
       appBar: AppBar(
         title: Text(
           'Crear plantilla para $plantillaTipoCapitalizada',
-          style: const TextStyle(fontSize: 18),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 18, 
+              ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        foregroundColor: AppColors.textDark, 
         elevation: 0,
       ),
       backgroundColor: Colors.white,
@@ -141,61 +169,67 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           children: [
-            TextField(
+            CustomTextField( 
               controller: _topicController,
-              decoration: _inputDecoration('Tema', 'Tema de la plantilla'),
+              label: 'Tema',
+              hint: 'Tema de la plantilla',
             ),
             const SizedBox(height: 20),
 
             if (widget.templateType == 'Exámenes') ...[
-              TextField(
+              CustomTextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Número de preguntas', 'Ej: 5'),
+                label: 'Número de preguntas',
+                hint: 'Ej: 5',
               ),
               const SizedBox(height: 20),
-              TextField(
+              CustomTextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Duración (minutos)', 'Ej: 60'),
+                label: 'Duración (minutos)',
+                hint: 'Ej: 60',
               ),
               const SizedBox(height: 20),
-              TextField(
+              CustomTextField(
                 controller: _difficultyController,
-                decoration: _inputDecoration(
-                  'Dificultad',
-                  'Fácil, media, difícil',
-                ),
+                label: 'Dificultad',
+                hint: 'Fácil, media, difícil',
               ),
             ] else if (widget.templateType == 'Talleres') ...[
-              TextField(
+              CustomTextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Duración (horas)', 'Ej: 2'),
+                label: 'Duración (horas)',
+                hint: 'Ej: 2',
               ),
               const SizedBox(height: 20),
-              TextField(
+              CustomTextField(
                 controller: _numActivitiesController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Número de actividades', 'Ej: 3'),
+                label: 'Número de actividades',
+                hint: 'Ej: 3',
               ),
             ] else if (widget.templateType == 'Temario') ...[
-              TextField(
+              CustomTextField(
                 controller: _numLeccionesController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Número de lecciones', 'Ej: 3'),
-              )
+                label: 'Número de lecciones',
+                hint: 'Ej: 3',
+              ),
             ] else if (widget.templateType == 'Quizzes') ...[
-              TextField(
+              CustomTextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Número de preguntas', 'Ej: 10'),
+                label: 'Número de preguntas',
+                hint: 'Ej: 10',
               ),
               const SizedBox(height: 20),
-              TextField(
+              CustomTextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
-                decoration: _inputDecoration('Duración (minutos)', 'Ej: 30'),
+                label: 'Duración (minutos)',
+                hint: 'Ej: 30',
               ),
             ],
 
@@ -206,22 +240,20 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
               child: ElevatedButton(
                 onPressed: _loading ? null : _generateTemplate,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
+                  backgroundColor: AppColors.primary, 
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child:
-                    _loading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                          'Generar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        'Generar',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith( 
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
               ),
             ),
             const SizedBox(height: 12),
@@ -231,22 +263,19 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
               child: ElevatedButton(
                 onPressed: _clearFields,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Colors
-                          .deepPurpleAccent, // mismo color que el botón generar
+                  backgroundColor: AppColors.accent2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                   elevation: 4,
-                  shadowColor: Colors.deepPurpleAccent.withOpacity(0.5),
+                  shadowColor: AppColors.accent2.withOpacity(0.5), 
                 ),
-                child: const Text(
+                child: Text(
                   'Nueva Plantilla',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                 ),
               ),
             ),

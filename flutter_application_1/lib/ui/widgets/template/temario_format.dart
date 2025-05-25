@@ -1,26 +1,23 @@
 import 'package:flutter/material.dart';
-// Para iconos similares a Lucide, podrías considerar el paquete `lucide_icons`
-// import 'package:lucide_icons/lucide_icons.dart';
 
-class TemarioFlutterWidget extends StatefulWidget {
+class TemarioFormat extends StatefulWidget {
   final Map<String, dynamic> temarioData;
 
-  const TemarioFlutterWidget({super.key, required this.temarioData});
+  const TemarioFormat({super.key, required this.temarioData});
 
   @override
-  State<TemarioFlutterWidget> createState() => _TemarioFlutterWidgetState();
+  State<TemarioFormat> createState() => _TemarioFormat();
 }
 
-class _TemarioFlutterWidgetState extends State<TemarioFlutterWidget> {
+class _TemarioFormat extends State<TemarioFormat> {
   int _periodoActivo = 0;
 
-  // Colores inspirados en tu ejemplo de React (puedes personalizarlos)
-  static const Color primaryColor = Color(0xFF3B82F6); // Azul principal
-  static const Color lightBlueBg = Color(0xFFEFF6FF); // Fondo azul claro para items
-  static const Color lightGreenBg = Color(0xFFF0FDF4); // Fondo verde claro
-  static const Color greenAccent = Color(0xFF10B981); // Acento verde
-  static const Color lightPurpleBg = Color(0xFFFAF5FF); // Fondo morado claro
-  static const Color purpleAccent = Color(0xFF8B5CF6); // Acento morado
+  static const Color primaryColor = Color(0xFF3B82F6); 
+  static const Color lightBlueBg = Color(0xFFEFF6FF); 
+  static const Color lightGreenBg = Color(0xFFF0FDF4); 
+  static const Color greenAccent = Color(0xFF10B981); 
+  static const Color lightPurpleBg = Color(0xFFFAF5FF); 
+  static const Color purpleAccent = Color(0xFF8B5CF6); 
 
   @override
   Widget build(BuildContext context) {
@@ -52,15 +49,11 @@ class _TemarioFlutterWidgetState extends State<TemarioFlutterWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
             _buildHeader(titulo, descripcionGeneral),
             const SizedBox(height: 24),
 
-            // Botones de Períodos
             _buildPeriodoButtons(periodos),
             const SizedBox(height: 24),
-
-            // Contenido del Período Seleccionado
             _buildPeriodoSeleccionadoContent(periodoSeleccionado),
           ],
         ),
@@ -130,7 +123,7 @@ class _TemarioFlutterWidgetState extends State<TemarioFlutterWidget> {
                 if (states.contains(MaterialState.hovered)) {
                   return isActive ? Colors.white.withOpacity(0.1) : primaryColor.withOpacity(0.1);
                 }
-                return null; // Defer to the widget's default.
+                return null;
               },
             ),
           ),
@@ -165,7 +158,6 @@ class _TemarioFlutterWidgetState extends State<TemarioFlutterWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título y descripción del período
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -256,15 +248,6 @@ class _TemarioFlutterWidgetState extends State<TemarioFlutterWidget> {
           color: Colors.grey.shade800,
         ),
       ),
-      // Para replicar el borde inferior, se puede usar un Container o Divider,
-      // pero por simplicidad lo dejo así. Un Divider es más sencillo:
-      // child: Column(
-      //  crossAxisAlignment: CrossAxisAlignment.start,
-      //   children: [
-      //     Text(...),
-      //     Divider(color: borderColor, thickness: 2, endIndent: MediaQuery.of(context).size.width * 0.7,)
-      //   ],
-      // )
     );
   }
 
