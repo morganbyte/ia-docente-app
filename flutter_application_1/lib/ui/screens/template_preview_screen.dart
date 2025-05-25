@@ -1,13 +1,8 @@
-import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../screens/temario_flutter_widget.dart';
-import '../../data/services/transfer_sh_service.dart';
-import '../../data/services/pdf_generator_service.dart';
 
 class TemplatePreviewScreen extends StatefulWidget {
   final String jsonResponse;
@@ -681,7 +676,6 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
 
           // Sección de progreso
           _buildProgressSection(actividades.length),
-
         ],
       ),
     );
@@ -850,78 +844,6 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExportAndShareButton(Map<String, dynamic> responseMap) {
-    return Container(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.download, size: 18),
-        label: const Text(
-          'Exportar PDF y Compartir',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        onPressed: () async {
-          try {
-            // 1. Generar PDF en bytes
-            final Uint8List pdfBytes = await generatePdfBytes(
-              responseMap,
-              widget.templateType,
-            );
-
-            // 2. Guardar PDF temporalmente
-            final File tempFile = await savePdfTempFile(
-              pdfBytes,
-              'plantilla_${DateTime.now().millisecondsSinceEpoch}.pdf',
-            );
-
-            // 3. Subir a Transfer.sh y obtener link
-            final String? url = await uploadFileToTransferSh(tempFile);
-
-            if (url != null) {
-              // 4. Mostrar enlace al usuario
-              if (!mounted) return;
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Enlace para compartir'),
-                      content: SelectableText(url),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cerrar'),
-                        ),
-                      ],
-                    ),
-              );
-            } else {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Error al subir el archivo.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          } catch (e) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-            );
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1E293B),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
-        ),
       ),
     );
   }
@@ -1247,32 +1169,6 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
               ),
             ],
           ),
-
-          const SizedBox(height: 39),
-
-          // Botón de exportar PDF
-          Container(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.download, size: 18),
-              label: const Text(
-                'Exportar PDF',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-              ),
-              onPressed: () {
-                _buildModernExportButton(responseMap);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E293B),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1547,28 +1443,6 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _buildModernExportButton(responseMap);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E293B),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Exportar PDF',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ],
@@ -1619,37 +1493,8 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildModernExportButton(responseMap),
         ],
       ),
     );
   }
-
-  Widget _buildModernExportButton(Map<String, dynamic> responseMap) {
-    return Container(
-      width: double.infinity,
-      height: 48,
-      child: ElevatedButton.icon(
-        icon: const Icon(Icons.download, size: 18),
-        label: const Text(
-          'Exportar a PDF',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        onPressed: () {
-          _buildExportAndShareButton(responseMap);
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1E293B),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 0,
-        ),
-      ),
-    );
-  }
-
-  
 }
