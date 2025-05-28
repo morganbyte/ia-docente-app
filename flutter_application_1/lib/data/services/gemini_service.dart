@@ -3,12 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_1/utils/prompt_generator.dart';
 import 'package:flutter_application_1/utils/response_cleaner.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class GeminiService {
-  final String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
-  final String _apiKey = 'AIzaSyA1693TDkcaADVhazIbLLsitORij14L43g';
-  final String _model = 'gemini-2.0-flash';
+  final String _baseUrl = dotenv.env['BASE_URL']!;
+  final String _apiKey = dotenv.env['API_KEY']!;
+  final String _model = dotenv.env['MODEL']!;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
