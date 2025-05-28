@@ -27,10 +27,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   Future<void> _generateTemplate() async {
     final topic = _topicController.text.trim();
     final difficulty = _difficultyController.text.trim();
-    final duration = _durationController.text.trim();
     final numQuestions = int.tryParse(_numQuestionsController.text.trim()) ?? 5;
     final numActivities = int.tryParse(_numActivitiesController.text.trim()) ?? 0;
-    final numLecciones = int.tryParse(_numLeccionesController.text.trim()) ?? 0;
 
     if (topic.isEmpty) {
       _showDialog('Por favor, ingresa un tema.');
@@ -47,17 +45,12 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
 
       if (widget.templateType == 'Exámenes') {
         request["numeroPreguntas"] = numQuestions.toString();
-        request["duracion"] = duration;
         request["dificultad"] = difficulty;
       } else if (widget.templateType == 'Talleres') {
-        request["duracion"] = duration;
         request["numeroActividades"] = numActivities.toString();
       } else if (widget.templateType == 'Temario') {
-        request["duracion"] = duration;
-        request["numeroLecciones"] = numLecciones.toString();
       } else if (widget.templateType == 'Quizzes') {
         request["numeroPreguntas"] = numQuestions.toString();
-        request["duracion"] = duration;
       }
 
       final response = await GeminiService().getGeminiResponseFromRequest(
@@ -137,10 +130,8 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
   void dispose() {
     _topicController.dispose();
     _numQuestionsController.dispose();
-    _durationController.dispose();
     _difficultyController.dispose();
     _numActivitiesController.dispose();
-    _numLeccionesController.dispose(); 
     super.dispose();
   }
 
@@ -185,25 +176,11 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
               ),
               const SizedBox(height: 20),
               CustomTextField(
-                controller: _durationController,
-                keyboardType: TextInputType.number,
-                label: 'Duración (minutos)',
-                hint: 'Ej: 60',
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
                 controller: _difficultyController,
                 label: 'Dificultad',
                 hint: 'Fácil, media, difícil',
               ),
             ] else if (widget.templateType == 'Talleres') ...[
-              CustomTextField(
-                controller: _durationController,
-                keyboardType: TextInputType.number,
-                label: 'Duración (horas)',
-                hint: 'Ej: 2',
-              ),
-              const SizedBox(height: 20),
               CustomTextField(
                 controller: _numActivitiesController,
                 keyboardType: TextInputType.number,
@@ -211,25 +188,12 @@ class _TemplateFormScreenState extends State<TemplateFormScreen> {
                 hint: 'Ej: 3',
               ),
             ] else if (widget.templateType == 'Temario') ...[
-              CustomTextField(
-                controller: _numLeccionesController,
-                keyboardType: TextInputType.number,
-                label: 'Número de lecciones',
-                hint: 'Ej: 3',
-              ),
             ] else if (widget.templateType == 'Quizzes') ...[
               CustomTextField(
                 controller: _numQuestionsController,
                 keyboardType: TextInputType.number,
                 label: 'Número de preguntas',
                 hint: 'Ej: 10',
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                controller: _durationController,
-                keyboardType: TextInputType.number,
-                label: 'Duración (minutos)',
-                hint: 'Ej: 30',
               ),
             ],
 
