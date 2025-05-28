@@ -26,12 +26,27 @@ class TallerFormat extends StatefulWidget {
 class _TallerFormatState extends State<TallerFormat> {
   late Map<int, bool> completedActivities;
   late Map<int, String?> activityNotes;
+  late Map<int, TextEditingController> controllers;
 
   @override
   void initState() {
     super.initState();
     completedActivities = Map.from(widget.completedActivities);
     activityNotes = Map.from(widget.activityNotes);
+    controllers = {};
+    for (int i = 0; i < widget.actividades.length; i++) {
+      controllers[i] = TextEditingController(text: activityNotes[i] ?? '');
+      controllers[i]!.addListener(() {
+        activityNotes[i] = controllers[i]!.text;
+        widget.onNoteChanged(i, controllers[i]!.text);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    controllers.values.forEach((c) => c.dispose());
+    super.dispose();
   }
 
   @override
@@ -47,10 +62,7 @@ class _TallerFormatState extends State<TallerFormat> {
         children: [
           const Text(
             'Actividades del Taller',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ...actividades.asMap().entries.map((entry) {
@@ -58,7 +70,8 @@ class _TallerFormatState extends State<TallerFormat> {
             final actividad = entry.value;
             final isCompleted = completedActivities[index] ?? false;
             final hasNotes = activityNotes[index]?.isNotEmpty ?? false;
-            final titulo = actividad['tituloActividad'] ?? 'Actividad \${index + 1}';
+            final titulo =
+                actividad['tituloActividad'] ?? 'Actividad ${index + 1}';
             final descripcion = actividad['descripcionActividad'] ?? '';
 
             return Container(
@@ -67,7 +80,10 @@ class _TallerFormatState extends State<TallerFormat> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isCompleted ? const Color(0xFFD1FAE5) : const Color(0xFFE2E8F0),
+                  color:
+                      isCompleted
+                          ? const Color(0xFFD1FAE5)
+                          : const Color(0xFFE2E8F0),
                   width: isCompleted ? 2 : 1,
                 ),
               ),
@@ -78,7 +94,10 @@ class _TallerFormatState extends State<TallerFormat> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: isCompleted ? const Color(0xFFF0FDF4) : const Color(0xFFFAFAFA),
+                      color:
+                          isCompleted
+                              ? const Color(0xFFF0FDF4)
+                              : const Color(0xFFFAFAFA),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
@@ -91,20 +110,28 @@ class _TallerFormatState extends State<TallerFormat> {
                           height: 40,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isCompleted ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
+                            color:
+                                isCompleted
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF8B5CF6),
                           ),
-                          child: isCompleted
-                              ? const Icon(Icons.check, color: Colors.white, size: 20)
-                              : Center(
-                                  child: Text(
-                                    '\${index + 1}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                          child:
+                              isCompleted
+                                  ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 20,
+                                  )
+                                  : Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -138,7 +165,11 @@ class _TallerFormatState extends State<TallerFormat> {
                               color: const Color(0xFF0EA5E9),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: const Icon(Icons.note_add, color: Colors.white, size: 16),
+                            child: const Icon(
+                              Icons.note_add,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                       ],
                     ),
@@ -158,10 +189,11 @@ class _TallerFormatState extends State<TallerFormat> {
                         ),
                         const SizedBox(height: 16),
                         TextField(
-                          controller: TextEditingController(text: activityNotes[index] ?? ''),
+                          controller: controllers[index],
                           maxLines: 3,
                           decoration: const InputDecoration(
-                            hintText: 'Escribe tus notas sobre esta actividad...',
+                            hintText:
+                                'Escribe tus notas sobre esta actividad...',
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (value) {
@@ -177,11 +209,16 @@ class _TallerFormatState extends State<TallerFormat> {
                             setState(() {
                               completedActivities[index] = !isCompleted;
                             });
-                            widget.onToggleCompletion(index, completedActivities[index]!);
+                            widget.onToggleCompletion(
+                              index,
+                              completedActivities[index]!,
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                isCompleted ? const Color(0xFF10B981) : const Color(0xFF8B5CF6),
+                                isCompleted
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF8B5CF6),
                             foregroundColor: Colors.white,
                           ),
                           child: Row(
@@ -195,8 +232,13 @@ class _TallerFormatState extends State<TallerFormat> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                isCompleted ? 'Completada' : 'Marcar como completada',
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                                isCompleted
+                                    ? 'Completada'
+                                    : 'Marcar como completada',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
