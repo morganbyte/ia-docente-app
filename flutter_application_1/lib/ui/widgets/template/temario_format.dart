@@ -40,76 +40,92 @@ class _TemarioFormat extends State<TemarioFormat> {
         ),
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildHeader(titulo, descripcionGeneral),
-            const SizedBox(height: 24),
-            _buildPeriodoButtons(periodos),
-            const SizedBox(height: 24),
-            _buildPeriodoSeleccionadoContent(periodoSeleccionado),
-          ],
-        ),
-      ),
+  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildHeader(titulo, descripcionGeneral),
+      const SizedBox(height: 24),
+      _buildPeriodoButtons(periodos),
+      const SizedBox(height: 28),
+      _buildPeriodoSeleccionadoContent(periodoSeleccionado),
+    ],
+  ),
+),
+
     );
   }
 
-  Widget _buildHeader(String titulo, String descripcionGeneral) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.book_outlined, color: AppColors.primary, size: 28),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                titulo,
-                textAlign: TextAlign.center,
-                style: ThemeData().textTheme.headlineSmall,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          descripcionGeneral,
-          textAlign: TextAlign.center,
-          style: ThemeData().textTheme.bodyMedium,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPeriodoButtons(List<dynamic> periodos) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 12.0,
-      runSpacing: 12.0,
-      children: List.generate(periodos.length, (index) {
-        final bool isActive = _periodoActivo == index;
-        return ElevatedButton(
-          onPressed: () {
-            setState(() {
-              _periodoActivo = index;
-            });
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isActive ? AppColors.primary : AppColors.background,
-            foregroundColor: isActive ? Colors.white : AppColors.textDark,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            textStyle: ThemeData().textTheme.labelLarge,
-            elevation: isActive ? 6.0 : 3.0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
+Widget _buildHeader(String titulo, String descripcionGeneral) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(Icons.book_outlined, color: AppColors.primary, size: 28),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              titulo,
+              textAlign: TextAlign.left,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark,
+                  ),
             ),
           ),
-          child: Text(periodos[index]['nombre'] ?? 'Período ${index + 1}'),
-        );
-      }),
-    );
-  }
+        ],
+      ),
+      const SizedBox(height: 12),
+      Text(
+        descripcionGeneral,
+        textAlign: TextAlign.left,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textDark.withOpacity(0.8),
+              height: 1.4,
+            ),
+      ),
+    ],
+  );
+}
+
+
+  Widget _buildPeriodoButtons(List<dynamic> periodos) {
+  return Wrap(
+    alignment: WrapAlignment.start,
+    spacing: 12.0,
+    runSpacing: 12.0,
+    children: List.generate(periodos.length, (index) {
+      final bool isActive = _periodoActivo == index;
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            _periodoActivo = index;
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : Colors.white,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: AppColors.primary),
+            boxShadow: isActive
+                ? [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
+                : [],
+          ),
+          child: Text(
+            periodos[index]['nombre'] ?? 'Período ${index + 1}',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: isActive ? Colors.white : AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ),
+      );
+    }),
+  );
+}
+
 
   Widget _buildPeriodoSeleccionadoContent(Map<String, dynamic> periodo) {
     final String nombrePeriodo = periodo['nombre'] ?? "Período";
