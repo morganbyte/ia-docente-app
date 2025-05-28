@@ -38,8 +38,8 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   late String _userId;
-  String?
-  _tallerId; 
+  String? _tallerId;
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -80,12 +80,16 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
   Future<void> _loadUserAndProgress() async {
     final user = _auth.currentUser;
     if (user == null) {
-      // Usuario no autenticado, manejar según convenga
       return;
     }
     _userId = user.uid;
 
-    if (_tallerId == null) return;
+    if (_tallerId == null) {
+      setState(() {
+        isLoading = false;
+      });
+      return;
+    };
 
     try {
       final doc =
@@ -114,10 +118,20 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
                 (key, value) => MapEntry(int.parse(key), value as String),
               ) ??
               {};
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          completedActivities = {};
+          activityNotes = {};
+          isLoading = false;
         });
       }
     } catch (e) {
       print('Error al cargar progreso taller: $e');
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -150,6 +164,13 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> responseMap = jsonDecode(widget.jsonResponse);
+
+    if (widget.templateType == 'Talleres' && isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -313,8 +334,18 @@ class _TemplatePreviewScreenState extends State<TemplatePreviewScreen>
       completedActivities: completedActivities,
       activityNotes: activityNotes,
       onSaveProgress: _saveProgress,
-      onToggleCompletion: (int index, bool value) {},
-      onNoteChanged: (int index, String value) {},
+      onToggleCompletion: (int index, bool value) {
+        setState(() {
+          completedActivities[index] = value;
+        });
+        _saveProgress();
+      },
+      onNoteChanged: (int index, String value) {
+        setState(() {
+          activityNotes[index] = value;
+        });
+        _saveProgress(); 
+      },
     );
   }
 
