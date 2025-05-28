@@ -91,40 +91,47 @@ Widget _buildHeader(String titulo, String descripcionGeneral) {
 
 
   Widget _buildPeriodoButtons(List<dynamic> periodos) {
-  return Wrap(
-    alignment: WrapAlignment.start,
-    spacing: 12.0,
-    runSpacing: 12.0,
-    children: List.generate(periodos.length, (index) {
-      final bool isActive = _periodoActivo == index;
-      return GestureDetector(
-        onTap: () {
-          setState(() {
-            _periodoActivo = index;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.primary),
-            boxShadow: isActive
-                ? [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
-                : [],
-          ),
-          child: Text(
-            periodos[index]['nombre'] ?? 'Período ${index + 1}',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: isActive ? Colors.white : AppColors.primary,
-                  fontWeight: FontWeight.w600,
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(periodos.length, (index) {
+          final bool isActive = _periodoActivo == index;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _periodoActivo = index;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isActive ? AppColors.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(32),
+                  border: Border.all(color: AppColors.primary),
+                  boxShadow: isActive
+                      ? [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]
+                      : [],
                 ),
-          ),
-        ),
+                child: Text(
+                  periodos[index]['nombre'] ?? 'Período ${index + 1}',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: isActive ? Colors.white : AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          );
+        }),
       );
-    }),
+    },
   );
 }
+
 
 
   Widget _buildPeriodoSeleccionadoContent(Map<String, dynamic> periodo) {
